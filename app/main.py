@@ -1,4 +1,10 @@
-"""FastAPI application with hexagonal architecture and dependency injection."""
+"""FastAPI application with hexagonal architecture and dependency injection.
+
+This service is licensed under AGPL 3.0 due to the use of Kerykeion library.
+Public repository: https://github.com/markymark2001/luna-astrology-service
+
+The service is automatically synced from the private Luna repository.
+"""
 
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse

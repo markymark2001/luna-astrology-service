@@ -227,15 +227,17 @@ These will be added as new endpoints under `/api/v1/`.
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0) - see the LICENSE file for details.
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
 
 This license is required due to the use of [Kerykeion](https://github.com/g-battaglia/kerykeion), which is also licensed under AGPL-3.0.
 
+**Source Code Availability:** This repository is automatically synced from the private Luna project to ensure AGPL compliance. All changes are publicly available.
+
 ## Credits
 
-- **Kerykeion**: Astrology library by Giacomo Battaglia
+- **Kerykeion**: Astrology library by [Giacomo Battaglia](https://github.com/g-battaglia)
 - **FastAPI**: Modern Python web framework
-- **Luna**: Parent project by Mark Vasilyev
+- **Luna**: Parent project
 
 ## Contributing
 
