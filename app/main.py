@@ -15,6 +15,7 @@ from app.api.v1 import api_router
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 from app.application.profile_service import ProfileService
 from app.application.compatibility_service import SynastryService
+from app.application.transit_period_service import TransitPeriodService
 from app.core.exceptions import (
     AstrologyServiceException,
     ChartCalculationException,
@@ -46,13 +47,15 @@ config = get_preset(DetailLevel.CORE)
 provider = KerykeionProvider(config=config)
 profile_service_instance = ProfileService(provider=provider)
 synastry_service_instance = SynastryService(provider=provider)
+transit_period_service_instance = TransitPeriodService(provider=provider)
 
 
 # Override dependency injection using FastAPI's built-in system
-from app.api.v1 import profile, compatibility
+from app.api.v1 import profile, compatibility, transit_period
 
 app.dependency_overrides[profile.get_profile_service] = lambda: profile_service_instance
 app.dependency_overrides[compatibility.get_synastry_service] = lambda: synastry_service_instance
+app.dependency_overrides[transit_period.get_transit_period_service] = lambda: transit_period_service_instance
 
 
 # Register exception handlers

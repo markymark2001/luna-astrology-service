@@ -46,6 +46,41 @@ class ProfileRequest(BirthData):
         }
 
 
+class TransitPeriodRequest(BirthData):
+    """
+    Request model for transit period calculation (past or future).
+
+    Inherits birth data fields from domain BirthData model.
+    """
+
+    start_date: str = Field(
+        ...,
+        description="Start date for transit period in YYYY-MM-DD format",
+        pattern=r"^\d{4}-\d{2}-\d{2}$"
+    )
+    end_date: str = Field(
+        ...,
+        description="End date for transit period in YYYY-MM-DD format",
+        pattern=r"^\d{4}-\d{2}-\d{2}$"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "year": 1990,
+                "month": 3,
+                "day": 15,
+                "hour": 14,
+                "minute": 30,
+                "latitude": 40.7128,
+                "longitude": -74.0060,
+                "timezone": "America/New_York",
+                "start_date": "2026-01-01",
+                "end_date": "2026-12-31"
+            }
+        }
+
+
 class SynastryRequest(BaseModel):
     """Request model for synastry analysis (relationship compatibility)."""
 
