@@ -81,6 +81,34 @@ class TransitPeriodRequest(BirthData):
         }
 
 
+class PlanetHouseRequest(BirthData):
+    """
+    Request model for getting a specific planet's house position.
+
+    Inherits birth data fields from domain BirthData model.
+    """
+
+    planet: str = Field(
+        ...,
+        description="Planet name (e.g., 'sun', 'moon', 'venus')"
+    )
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "planet": "venus",
+                "year": 1990,
+                "month": 3,
+                "day": 15,
+                "hour": 14,
+                "minute": 30,
+                "latitude": 40.7128,
+                "longitude": -74.0060,
+                "timezone": "America/New_York"
+            }
+        }
+
+
 class SynastryRequest(BaseModel):
     """Request model for synastry analysis (relationship compatibility)."""
 

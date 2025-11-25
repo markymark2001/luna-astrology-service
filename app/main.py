@@ -51,11 +51,12 @@ transit_period_service_instance = TransitPeriodService(provider=provider)
 
 
 # Override dependency injection using FastAPI's built-in system
-from app.api.v1 import profile, compatibility, transit_period
+from app.api.v1 import profile, compatibility, transit_period, planet_house
 
 app.dependency_overrides[profile.get_profile_service] = lambda: profile_service_instance
 app.dependency_overrides[compatibility.get_synastry_service] = lambda: synastry_service_instance
 app.dependency_overrides[transit_period.get_transit_period_service] = lambda: transit_period_service_instance
+app.dependency_overrides[planet_house.get_profile_service] = lambda: profile_service_instance
 
 
 # Register exception handlers

@@ -18,3 +18,11 @@ class StandardResponse(BaseModel):
     timestamp: str = Field(..., description="ISO 8601 timestamp")
     data: Optional[dict] = Field(None, description="Response data (success only)")
     error: Optional[ErrorDetail] = Field(None, description="Error details (error only)")
+
+
+class PlanetHouseResponse(BaseModel):
+    """Response model for planet house position."""
+
+    planet: str = Field(..., description="Planet name")
+    house: int = Field(..., description="House number (1-12)")
+    sign: str = Field(..., description="Zodiac sign the planet is in")
