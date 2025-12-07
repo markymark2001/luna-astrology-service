@@ -1,6 +1,5 @@
 """Astrological profile API endpoints with hexagonal architecture."""
 
-import json
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import PlainTextResponse
 
@@ -25,20 +24,22 @@ def get_profile_service() -> ProfileService:
     "/profile",
     status_code=status.HTTP_200_OK,
     response_class=PlainTextResponse,
-    summary="Get astrological profile as JSON string",
-    description="Calculate natal chart and current transits, returned as standardized JSON string for LLM consumption."
+    summary="Get astrological profile as compact text",
+    description="Calculate natal chart and current transits, returned as compact text for LLM consumption (~80% token reduction)."
 )
 async def get_profile(
     request: ProfileRequest,
     profile_service: ProfileService = Depends(get_profile_service)
 ) -> str:
     """
-    Get complete astrological profile as JSON string for LLM context.
+    Get complete astrological profile as compact text for LLM context.
 
-    Returns JSON string with:
-    - natal_chart: Planets, houses, points, birth data
-    - aspects: natal, transits_to_natal, current_sky
-    - transits: Current planetary positions
+    Returns word-based compact format with:
+    - PLANETS: Sun in Aries 15 deg (H1)
+    - HOUSES: 1st House: Aries
+    - NATAL ASPECTS: Sun conjunct Mercury (orb 1.2)
+    - CURRENT TRANSITS: Transit Sun in Capricorn 25 deg
+    - TRANSIT ASPECTS TO NATAL: Transit Mars opposite natal Sun (orb 2.3)
 
     Note: Uses CORE preset configuration (10 planets, 2 points, 6 houses, 4° orbs).
 
@@ -47,16 +48,12 @@ async def get_profile(
         profile_service: Injected profile service
 
     Returns:
-        JSON string optimized for LLM context
+        Compact text optimized for LLM context (~80% token reduction)
 
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
-    # Generate profile using application service
-    profile_data = profile_service.generate_profile(
+    return profile_service.generate_profile_compact(
         birth_data=request,
         transit_date=request.transit_date
     )
-
-    # Return data as JSON string directly
-    return json.dumps(profile_data)

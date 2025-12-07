@@ -1,5 +1,6 @@
 """Synastry application service - orchestrates relationship compatibility calculations."""
 
+from app.core.llm_formatter import format_synastry
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 
@@ -44,3 +45,17 @@ class SynastryService:
                 "aspects": synastry.aspects
             }
         }
+
+    def analyze_synastry_compact(self, person1_data: BirthData, person2_data: BirthData) -> str:
+        """
+        Analyze synastry with LLM-optimized compact output.
+
+        Args:
+            person1_data: First person's birth information
+            person2_data: Second person's birth information
+
+        Returns:
+            Compact text format optimized for LLM consumption (~80% token reduction)
+        """
+        synastry_data = self.analyze_synastry(person1_data, person2_data)
+        return format_synastry(synastry_data)

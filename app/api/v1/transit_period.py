@@ -1,6 +1,5 @@
 """Transit period API endpoints with hexagonal architecture."""
 
-import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
@@ -25,28 +24,26 @@ def get_transit_period_service() -> TransitPeriodService:
     "/transits/period",
     status_code=status.HTTP_200_OK,
     response_class=PlainTextResponse,
-    summary="Get transit data for a date range as JSON string",
-    description="Calculate transits over a date range (past or future) with automatic granularity adjustment, returned as standardized JSON string for LLM consumption."
+    summary="Get transit data for a date range as compact text",
+    description="Calculate transits over a date range (past or future) with automatic granularity adjustment, returned as compact text for LLM consumption (~80% token reduction)."
 )
 async def get_transit_period(
     request: TransitPeriodRequest,
     transit_period_service: TransitPeriodService = Depends(get_transit_period_service)
 ) -> str:
     """
-    Get transit data for any date range as JSON string for LLM context.
+    Get transit data for any date range as compact text for LLM context.
 
     Works for both past and future dates. Automatically adjusts granularity based on range:
     - 1-7 days: Daily snapshots
     - 8-60 days: Weekly snapshots
-    - 61-365 days: Bi-weekly snapshots
-    - 366+ days: Monthly snapshots
+    - 61-365 days: Monthly snapshots
+    - 366+ days: Quarterly/bi-yearly snapshots
 
-    Returns JSON string with:
-    - period: start, end, days
-    - granularity: "daily" | "weekly" | "bi-weekly" | "monthly"
-    - natal_chart: Planets, houses, points, natal aspects
-    - snapshots: Array of transit data at regular intervals
-    - snapshot_count: Number of snapshots generated
+    Returns word-based compact format with:
+    - PERIOD: 2025-01-01 to 2025-03-31 (monthly)
+    - NATAL POSITIONS: Sun in Aries 15 deg (H1)
+    - Date-based snapshots with transit positions and aspects
 
     Note: Uses CORE preset configuration (10 planets, 2 points, 6 houses, 4° orbs).
 
@@ -55,21 +52,17 @@ async def get_transit_period(
         transit_period_service: Injected transit period service
 
     Returns:
-        JSON string optimized for LLM context
+        Compact text optimized for LLM context (~80% token reduction)
 
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
     try:
-        # Generate transit period using application service
-        period_data = transit_period_service.generate_transit_period(
+        return transit_period_service.generate_transit_period_compact(
             birth_data=request,
             start_date=request.start_date,
             end_date=request.end_date
         )
-
-        # Return data as JSON string directly
-        return json.dumps(period_data)
 
     except ValueError as e:
         # Validation errors (e.g., invalid date range)

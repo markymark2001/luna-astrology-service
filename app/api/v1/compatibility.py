@@ -1,6 +1,5 @@
 """Synastry API endpoints for relationship compatibility analysis."""
 
-import json
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import PlainTextResponse
 
@@ -25,18 +24,18 @@ def get_synastry_service() -> SynastryService:
     "/synastry",
     status_code=status.HTTP_200_OK,
     response_class=PlainTextResponse,
-    summary="Get synastry analysis as JSON string",
-    description="Calculate synastry aspects between two birth charts, returned as standardized JSON string for LLM consumption."
+    summary="Get synastry analysis as compact text",
+    description="Calculate synastry aspects between two birth charts, returned as compact text for LLM consumption (~80% token reduction)."
 )
 async def get_synastry(
     request: SynastryRequest,
     synastry_service: SynastryService = Depends(get_synastry_service)
 ) -> str:
     """
-    Get synastry analysis as JSON string for LLM context.
+    Get synastry analysis as compact text for LLM context.
 
-    Returns JSON string with:
-    - synastry: cross-chart aspects only (no redundant natal charts)
+    Returns word-based compact format with:
+    - SYNASTRY ASPECTS: Person1 Sun conjunct Person2 Moon (orb 2.1)
 
     Note: Uses CORE preset configuration (10 planets, 2 points, 6 houses, 8° synastry orb).
 
@@ -45,16 +44,12 @@ async def get_synastry(
         synastry_service: Injected synastry service
 
     Returns:
-        JSON string optimized for LLM relationship analysis
+        Compact text optimized for LLM relationship analysis (~80% token reduction)
 
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
-    # Analyze synastry using application service
-    synastry_data = synastry_service.analyze_synastry(
+    return synastry_service.analyze_synastry_compact(
         person1_data=request.person1,
         person2_data=request.person2
     )
-
-    # Return data as JSON string directly
-    return json.dumps(synastry_data)

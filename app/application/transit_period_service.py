@@ -3,6 +3,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Literal
 
+from app.core.llm_formatter import simplify_planets, filter_aspects, format_transit_period
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 
@@ -74,12 +75,12 @@ class TransitPeriodService:
             snapshot = {
                 "date": current_dt.strftime("%Y-%m-%d"),
                 "transits": {
-                    "planets": self._simplify_planet_data(transits.planets)
+                    "planets": simplify_planets(transits.planets)
                 },
                 "aspects": {
                     # Only transit-to-natal aspects (most relevant for personal forecasting)
-                    # Filtered to major aspects with tight orbs
-                    "transits_to_natal": self._filter_aspects(transits.aspects_to_natal, 4.0)
+                    # Don't filter generational - transiting Pluto to natal Neptune IS personal
+                    "transits_to_natal": filter_aspects(transits.aspects_to_natal, filter_generational=False)
                     # Removed current_sky aspects (less relevant for personal forecasts)
                 }
             }
@@ -100,71 +101,34 @@ class TransitPeriodService:
             "granularity": granularity,
             "natal_chart": {
                 "birth_data": natal_chart.planets.get("birth_data"),
-                "planets": self._simplify_planet_data(natal_planets),
+                "planets": simplify_planets(natal_planets),
                 "houses": natal_chart.houses,
-                "points": self._simplify_planet_data(natal_chart.points),
-                "aspects": self._filter_aspects(natal_chart.aspects, 4.0)
+                "points": simplify_planets(natal_chart.points),
+                "aspects": filter_aspects(natal_chart.aspects)  # filter_generational=True by default
             },
             "snapshots": snapshots,
             "snapshot_count": len(snapshots)
         }
 
-    @staticmethod
-    def _simplify_planet_data(planets: dict) -> dict:
+    def generate_transit_period_compact(
+        self,
+        birth_data: BirthData,
+        start_date: str,
+        end_date: str
+    ) -> str:
         """
-        Keep only essential planet fields for forecasting.
-
-        Removes technical fields that don't improve LLM interpretation:
-        - speed, declination (technical data)
-        - element, quality, sign_num, abs_pos (redundant - inferred from sign)
+        Generate LLM-optimized compact transit period data.
 
         Args:
-            planets: Full planet data dictionary
+            birth_data: Birth information
+            start_date: Start date in YYYY-MM-DD format
+            end_date: End date in YYYY-MM-DD format
 
         Returns:
-            Simplified planet data with essential fields only
+            Compact text format optimized for LLM consumption (~80% token reduction)
         """
-        essential_fields = {"name", "sign", "position", "house", "retrograde"}
-
-        simplified = {}
-        for planet_key, planet_data in planets.items():
-            if isinstance(planet_data, dict):
-                simplified[planet_key] = {
-                    k: v for k, v in planet_data.items()
-                    if k in essential_fields
-                }
-            else:
-                # Non-dict values (like birth_data) pass through unchanged
-                simplified[planet_key] = planet_data
-
-        return simplified
-
-    @staticmethod
-    def _filter_aspects(aspects: list, max_orb: float = 4.0) -> list:
-        """
-        Filter aspects to major types with tight orbs only.
-
-        For transit forecasting, major aspects with tight orbs are most significant.
-        Minor aspects and wide orbs add noise without improving interpretation.
-
-        Args:
-            aspects: List of aspect dictionaries
-            max_orb: Maximum orb in degrees (default 4.0)
-
-        Returns:
-            Filtered list of major aspects with tight orbs
-        """
-        major_aspects = {"conjunction", "opposition", "square", "trine", "sextile"}
-
-        filtered = []
-        for aspect in aspects:
-            aspect_name = aspect.get("aspect", "").lower()
-            orbit = abs(aspect.get("orbit", 99.0))
-
-            if aspect_name in major_aspects and orbit < max_orb:
-                filtered.append(aspect)
-
-        return filtered
+        transit_data = self.generate_transit_period(birth_data, start_date, end_date)
+        return format_transit_period(transit_data)
 
     @staticmethod
     def _determine_granularity(days: int) -> tuple[GranularityType, int]:

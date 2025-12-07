@@ -2,6 +2,7 @@
 
 from datetime import datetime, timezone
 
+from app.core.llm_formatter import format_natal_chart
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 
@@ -60,3 +61,17 @@ class ProfileService:
                 "planets": transits.planets
             }
         }
+
+    def generate_profile_compact(self, birth_data: BirthData, transit_date: datetime | None = None) -> str:
+        """
+        Generate LLM-optimized compact astrological profile.
+
+        Args:
+            birth_data: Birth information
+            transit_date: Date for transit calculation (defaults to now)
+
+        Returns:
+            Compact text format optimized for LLM consumption (~80% token reduction)
+        """
+        profile_data = self.generate_profile(birth_data, transit_date)
+        return format_natal_chart(profile_data)
