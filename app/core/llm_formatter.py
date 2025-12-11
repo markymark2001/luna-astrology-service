@@ -245,7 +245,7 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
 
 
 def format_transit_period(transit_data: dict[str, Any]) -> str:
-    """Format transit period data as LLM-optimized text.
+    """Format transit period data as LLM-optimized text (legacy snapshot format).
 
     Args:
         transit_data: Transit period data with period info, natal chart, snapshots
@@ -296,6 +296,147 @@ def format_transit_period(transit_data: dict[str, Any]) -> str:
         lines.append("")
 
     return "\n".join(lines).strip()
+
+
+def format_transit_periods(transit_data: dict[str, Any]) -> str:
+    """Format transit periods with precise timing as LLM-optimized text.
+
+    Compact single-line format. Natal positions excluded (already in context).
+
+    Args:
+        transit_data: Transit period data with transit_aspects containing timing info
+
+    Returns:
+        Multi-line formatted text block optimized for LLM consumption
+
+    Example output:
+        TRANSITS 2025-01-01 to 2025-03-31
+        Saturn conj natal Mars: Jan1-Mar30 exact Feb9 (0.01°)
+        Mars opp natal Moon: Jan1-Mar30 exact Jan15 (0.01°)
+    """
+    lines = []
+
+    # Period header (compact)
+    period = transit_data.get("period", {})
+    start = period.get("start", "")
+    end = period.get("end", "")
+    lines.append(f"TRANSITS {start} to {end}")
+
+    # Transit aspects with timing - compact single-line format
+    transit_aspects = transit_data.get("transit_aspects", [])
+    for aspect in transit_aspects:
+        transit_planet = aspect.get("transit_planet", "")
+        natal_planet = aspect.get("natal_planet", "")
+        aspect_type = aspect.get("aspect_type", "")
+        start_date = aspect.get("start_date", "")
+        end_date = aspect.get("end_date", "")
+        exact_date = aspect.get("exact_date", "")
+        exact_orb = aspect.get("exact_orb", 0)
+
+        # Shorten aspect names
+        aspect_short = _shorten_aspect(aspect_type)
+
+        # Check if period spans multiple years
+        multi_year = _spans_multiple_years(start_date, end_date)
+
+        # Format date range compact, avoid repeating month/year
+        date_range = _format_date_range(start_date, end_date)
+        exact_fmt = _format_compact_date(exact_date, include_year=multi_year)
+
+        # Single line format (no "natal" - all are transit-to-natal)
+        lines.append(f"{transit_planet} {aspect_short} {natal_planet}: {date_range} exact {exact_fmt} ({exact_orb}°)")
+
+    return "\n".join(lines).strip()
+
+
+def _format_date_range(start_str: str, end_str: str) -> str:
+    """Format date range, avoiding repeated month/year. Jan1-4, Jan28-Feb5, Dec25'25-Jan5'26."""
+    if not start_str or not end_str:
+        return ""
+    try:
+        from datetime import date
+        start = date.fromisoformat(start_str)
+        end = date.fromisoformat(end_str)
+
+        start_month = start.strftime("%b")
+        end_month = end.strftime("%b")
+        start_year = start.year % 100  # 2025 -> 25
+        end_year = end.year % 100
+
+        if start.year == end.year:
+            # Same year - no year needed
+            if start_month == end_month:
+                # Same month: Jan1-4
+                return f"{start_month}{start.day}-{end.day}"
+            else:
+                # Different months: Jan28-Feb5
+                return f"{start_month}{start.day}-{end_month}{end.day}"
+        else:
+            # Different years: Dec25'25-Jan5'26
+            return f"{start_month}{start.day}'{start_year}-{end_month}{end.day}'{end_year}"
+    except (ValueError, AttributeError):
+        return f"{start_str}-{end_str}"
+
+
+def _spans_multiple_years(start_str: str, end_str: str) -> bool:
+    """Check if date range spans multiple years."""
+    if not start_str or not end_str:
+        return False
+    try:
+        from datetime import date
+        start = date.fromisoformat(start_str)
+        end = date.fromisoformat(end_str)
+        return start.year != end.year
+    except (ValueError, AttributeError):
+        return False
+
+
+def _shorten_aspect(aspect_type: str) -> str:
+    """Shorten aspect name for compact output."""
+    shortcuts = {
+        "conjunction": "conj",
+        "opposition": "opp",
+        "square": "sq",
+        "trine": "tri",
+        "sextile": "sxt",
+    }
+    return shortcuts.get(aspect_type.lower(), aspect_type)
+
+
+def _format_compact_date(date_str: str, include_year: bool = False) -> str:
+    """Format ISO date as compact date (e.g., 'Jan5' or 'Jan5'26')."""
+    if not date_str:
+        return ""
+    try:
+        from datetime import date
+        d = date.fromisoformat(date_str)
+        month = d.strftime("%b")
+        day = d.day
+        if include_year:
+            year = d.year % 100  # 2026 -> 26
+            return f"{month}{day}'{year}"
+        return f"{month}{day}"
+    except (ValueError, AttributeError):
+        return date_str
+
+
+def _format_short_date(date_str: str) -> str:
+    """Format ISO date string as short date (e.g., 'Jan 15').
+
+    Args:
+        date_str: Date in YYYY-MM-DD format
+
+    Returns:
+        Short date string like 'Jan 15'
+    """
+    if not date_str:
+        return ""
+    try:
+        from datetime import date
+        d = date.fromisoformat(date_str)
+        return d.strftime("%b %d").replace(" 0", " ")  # "Jan 05" -> "Jan 5"
+    except (ValueError, AttributeError):
+        return date_str
 
 
 def format_synastry(synastry_data: dict[str, Any]) -> str:

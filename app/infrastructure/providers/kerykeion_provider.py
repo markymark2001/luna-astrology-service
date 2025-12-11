@@ -1,13 +1,51 @@
 """Kerykeion astrology provider implementation."""
 
-from datetime import datetime
-from kerykeion import AstrologicalSubjectFactory, AspectsFactory
+from collections import defaultdict
+from datetime import datetime, date, timezone
+from kerykeion import AstrologicalSubjectFactory, AspectsFactory, EphemerisDataFactory, TransitsTimeRangeFactory
 
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.core.extractors import extract_celestial_objects, filter_aspects_by_orb, filter_personal_synastry_aspects
 from app.config.astrology_presets import AstrologyConfig
-from app.domain.models import BirthData, NatalChart, Synastry, Transit
+from app.domain.models import BirthData, NatalChart, Synastry, Transit, TransitAspect, TransitPeriodResult
 from app.domain.ports import IAstrologyProvider
+
+# Planets to track for transit periods (skip Moon - too fast, creates noise)
+TRANSIT_PLANETS = ['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
+
+# Outer planets (generational - transits between these are not personal)
+OUTER_PLANETS = {'Uranus', 'Neptune', 'Pluto'}
+
+# Aspects to track with their orbs
+TRANSIT_ASPECTS = [
+    {'name': 'conjunction', 'orb': 8},
+    {'name': 'opposition', 'orb': 8},
+    {'name': 'square', 'orb': 6},
+    {'name': 'trine', 'orb': 6},
+    {'name': 'sextile', 'orb': 4},
+]
+
+# Filtering thresholds
+MAX_EXACT_ORB = 3.0  # Only include aspects that get within 3° of exact
+MAX_DURATION_RATIO = 0.8  # Skip aspects active >80% of the period (background noise)
+TARGET_CHAR_LIMIT = 3000  # Target output size
+CHARS_PER_ASPECT = 50  # Average chars per aspect line
+MAX_ASPECTS = TARGET_CHAR_LIMIT // CHARS_PER_ASPECT  # ~60 aspects
+
+# Relevance weights for scoring
+TRANSIT_PLANET_WEIGHT = {
+    'Pluto': 10, 'Neptune': 9, 'Uranus': 8, 'Saturn': 7, 'Jupiter': 6,
+    'Mars': 4, 'Sun': 2, 'Venus': 2, 'Mercury': 1
+}
+NATAL_PLANET_WEIGHT = {
+    'Sun': 10, 'Moon': 10, 'Ascendant': 10, 'Medium_Coeli': 8,
+    'Mars': 7, 'Venus': 7, 'Mercury': 5,
+    'Jupiter': 4, 'Saturn': 4,
+    'Uranus': 2, 'Neptune': 2, 'Pluto': 2, 'Chiron': 1
+}
+ASPECT_WEIGHT = {
+    'conjunction': 10, 'opposition': 9, 'square': 8, 'trine': 5, 'sextile': 4
+}
 
 
 class KerykeionProvider(IAstrologyProvider):
@@ -200,3 +238,192 @@ class KerykeionProvider(IAstrologyProvider):
 
         except Exception as e:
             raise ChartCalculationException(f"Failed to calculate transits: {str(e)}")
+
+    def calculate_transit_periods(
+        self,
+        natal_chart: NatalChart,
+        start_date: date,
+        end_date: date,
+    ) -> TransitPeriodResult:
+        """
+        Calculate transit periods with precise timing using Kerykeion's TransitsTimeRangeFactory.
+
+        Args:
+            natal_chart: The natal chart to calculate transits for
+            start_date: Start date of the period
+            end_date: End date of the period
+
+        Returns:
+            TransitPeriodResult with list of TransitAspects
+
+        Raises:
+            ChartCalculationException: If calculation fails
+        """
+        try:
+            birth_data = natal_chart.birth_data
+            natal_subject = natal_chart.provider_data
+
+            if not natal_subject:
+                raise ChartCalculationException("Natal chart missing provider data")
+
+            # Convert dates to datetime for Kerykeion
+            start_dt = datetime(start_date.year, start_date.month, start_date.day, 12, 0, tzinfo=timezone.utc)
+            end_dt = datetime(end_date.year, end_date.month, end_date.day, 12, 0, tzinfo=timezone.utc)
+
+            # Determine step size based on period length
+            # Daily for short periods, weekly/monthly for longer
+            total_days = (end_date - start_date).days
+            if total_days <= 365:
+                step_days = 1  # Daily for up to 1 year
+            elif total_days <= 365 * 5:
+                step_days = 7  # Weekly for 1-5 years
+            else:
+                step_days = 30  # Monthly for 5+ years
+
+            # Generate ephemeris data
+            ephemeris = EphemerisDataFactory(
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                lng=birth_data.longitude,
+                lat=birth_data.latitude,
+                tz_str=birth_data.timezone,
+                step_type='days',
+                step=step_days,
+                max_days=15000  # Allow up to ~40 years
+            )
+
+            ephemeris_points = ephemeris.get_ephemeris_data_as_astrological_subjects()
+
+            # Use TransitsTimeRangeFactory to get all aspects
+            transits_factory = TransitsTimeRangeFactory(
+                natal_chart=natal_subject,
+                ephemeris_data_points=ephemeris_points,
+                active_points=TRANSIT_PLANETS,
+                active_aspects=TRANSIT_ASPECTS,
+            )
+
+            result = transits_factory.get_transit_moments()
+
+            # Post-process to extract periods with exact dates
+            aspects = self._extract_transit_periods(result.transits, start_date, end_date)
+
+            return TransitPeriodResult(
+                start_date=start_date,
+                end_date=end_date,
+                aspects=aspects
+            )
+
+        except Exception as e:
+            raise ChartCalculationException(f"Failed to calculate transit periods: {str(e)}")
+
+    def _extract_transit_periods(
+        self,
+        transits: list,
+        start_date: date,
+        end_date: date
+    ) -> list[TransitAspect]:
+        """
+        Extract transit periods from raw Kerykeion transit data.
+
+        Groups daily aspect data into continuous periods and finds exact dates.
+        Applies relevance scoring to limit output to ~3K chars regardless of period length.
+        """
+        total_days = (end_date - start_date).days + 1
+
+        # Track aspects across time: key -> list of (date, orb) tuples
+        aspect_timeline: dict[str, list[tuple[date, float]]] = defaultdict(list)
+
+        for transit in transits:
+            # Parse date from ISO format
+            transit_date_str = transit.date[:10]
+            transit_date = date.fromisoformat(transit_date_str)
+
+            for asp in transit.aspects:
+                transit_planet = asp.p1_name
+                natal_planet = asp.p2_name
+
+                # Skip outer-to-outer transits (generational, not personal)
+                if transit_planet in OUTER_PLANETS and natal_planet in OUTER_PLANETS:
+                    continue
+
+                key = f"{transit_planet}|{asp.aspect}|{natal_planet}"
+                aspect_timeline[key].append((transit_date, abs(asp.orbit)))
+
+        # Convert timeline to TransitAspect objects with scoring
+        scored_aspects: list[tuple[float, TransitAspect]] = []
+
+        for key, timeline in aspect_timeline.items():
+            if len(timeline) < 1:
+                continue
+
+            parts = key.split('|')
+            transit_planet = parts[0]
+            aspect_type = parts[1]
+            natal_planet = parts[2]
+
+            timeline.sort(key=lambda x: x[0])
+
+            # Find exact date (minimum orb)
+            min_orb_entry = min(timeline, key=lambda x: x[1])
+            exact_date = min_orb_entry[0]
+            exact_orb = min_orb_entry[1]
+
+            # Filter: skip if never gets close to exact
+            if exact_orb > MAX_EXACT_ORB:
+                continue
+
+            period_start = timeline[0][0]
+            period_end = timeline[-1][0]
+            duration_days = (period_end - period_start).days + 1
+
+            # Filter: skip if active for too much of the period (background noise)
+            duration_ratio = duration_days / total_days
+            if duration_ratio > MAX_DURATION_RATIO:
+                continue
+
+            # Calculate relevance score
+            score = self._calculate_relevance_score(
+                transit_planet, natal_planet, aspect_type, exact_orb
+            )
+
+            aspect = TransitAspect(
+                transit_planet=transit_planet,
+                natal_planet=natal_planet,
+                aspect_type=aspect_type,
+                start_date=period_start,
+                end_date=period_end,
+                exact_date=exact_date,
+                exact_orb=round(exact_orb, 2)
+            )
+            scored_aspects.append((score, aspect))
+
+        # Sort by score (highest first), then take top N
+        scored_aspects.sort(key=lambda x: x[0], reverse=True)
+        top_aspects = [asp for _, asp in scored_aspects[:MAX_ASPECTS]]
+
+        # Re-sort by exact date for chronological output
+        top_aspects.sort(key=lambda x: x.exact_date)
+
+        return top_aspects
+
+    @staticmethod
+    def _calculate_relevance_score(
+        transit_planet: str,
+        natal_planet: str,
+        aspect_type: str,
+        exact_orb: float
+    ) -> float:
+        """
+        Calculate relevance score for an aspect.
+
+        Higher score = more astrologically significant.
+        Score = transit_weight × natal_weight × aspect_weight × orb_weight
+        """
+        transit_w = TRANSIT_PLANET_WEIGHT.get(transit_planet, 1)
+        natal_w = NATAL_PLANET_WEIGHT.get(natal_planet, 1)
+        aspect_w = ASPECT_WEIGHT.get(aspect_type.lower(), 1)
+
+        # Orb weight: tighter orb = higher score (0° = 10, 3° = 1)
+        orb_w = max(1, 10 - (exact_orb * 3))
+
+        return transit_w * natal_w * aspect_w * orb_w

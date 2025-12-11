@@ -1,9 +1,9 @@
 """Astrology provider port (interface) for hexagonal architecture."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import datetime, date
 
-from app.domain.models import BirthData, NatalChart, Synastry, Transit
+from app.domain.models import BirthData, NatalChart, Synastry, Transit, TransitPeriodResult
 
 
 class IAstrologyProvider(ABC):
@@ -68,5 +68,33 @@ class IAstrologyProvider(ABC):
 
         Raises:
             ChartCalculationException: If transit calculation fails
+        """
+        pass
+
+    @abstractmethod
+    def calculate_transit_periods(
+        self,
+        natal_chart: NatalChart,
+        start_date: date,
+        end_date: date,
+    ) -> TransitPeriodResult:
+        """
+        Calculate transit periods with precise timing for a date range.
+
+        Uses daily ephemeris to find when aspects become exact and their active periods.
+
+        Args:
+            natal_chart: The natal chart to calculate transits for
+            start_date: Start date of the period
+            end_date: End date of the period
+
+        Returns:
+            TransitPeriodResult with list of TransitAspects containing:
+            - Active period (start_date to end_date within orb)
+            - Exact date (when aspect is closest)
+            - Exact orb (minimum orb achieved)
+
+        Raises:
+            ChartCalculationException: If calculation fails
         """
         pass
