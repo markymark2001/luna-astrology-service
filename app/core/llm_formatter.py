@@ -243,6 +243,78 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
     return "\n".join(lines).strip()
 
 
+def format_personal_profile(chart_data: dict[str, Any]) -> str:
+    """Format natal chart + personal transit aspects, excluding current sky positions.
+
+    Unlike format_natal_chart, this excludes CURRENT TRANSITS (planet positions today)
+    since those are identical for everyone. Only includes person-specific data:
+    - Natal planets, points, houses, aspects
+    - Transit aspects TO natal (how today's sky affects THIS person)
+
+    Args:
+        chart_data: Natal chart data with planets, houses, points, aspects
+
+    Returns:
+        Multi-line formatted text block (excludes CURRENT TRANSITS section)
+    """
+    lines = []
+
+    # Format planets
+    natal_chart = chart_data.get("natal_chart", {})
+    planets = natal_chart.get("planets", {})
+    if planets:
+        lines.append("PLANETS")
+        for planet_key, planet_data in planets.items():
+            if isinstance(planet_data, dict) and "name" in planet_data:
+                lines.append(format_planet(planet_data))
+        lines.append("")
+
+    # Format points (Ascendant, MC, etc.)
+    points = natal_chart.get("points", {})
+    if points:
+        lines.append("POINTS")
+        for point_key, point_data in points.items():
+            if isinstance(point_data, dict) and "name" in point_data:
+                lines.append(format_planet(point_data))
+        lines.append("")
+
+    # Format houses
+    houses = natal_chart.get("houses", {})
+    if houses:
+        lines.append("HOUSES")
+        for house_key, house_data in houses.items():
+            if isinstance(house_data, dict):
+                name = house_data.get("name", house_key)
+                sign = house_data.get("sign", "Unknown")
+                lines.append(f"{name}: {sign}")
+        lines.append("")
+
+    # Format natal aspects
+    aspects = chart_data.get("aspects", {})
+    natal_aspects = aspects.get("natal", [])
+    if natal_aspects:
+        filtered = filter_aspects(natal_aspects)
+        if filtered:
+            lines.append("NATAL ASPECTS")
+            for aspect in filtered:
+                lines.append(format_aspect(aspect))
+            lines.append("")
+
+    # SKIP CURRENT TRANSITS - same for everyone, not person-specific
+
+    # Format transit-to-natal aspects (person-specific - how today affects THIS chart)
+    transit_aspects = aspects.get("transits_to_natal", [])
+    if transit_aspects:
+        filtered = filter_aspects(transit_aspects, filter_generational=False)
+        if filtered:
+            lines.append("TRANSIT ASPECTS TO NATAL")
+            for aspect in filtered:
+                lines.append(format_aspect(aspect, prefix1="Transit ", prefix2="natal "))
+            lines.append("")
+
+    return "\n".join(lines).strip()
+
+
 def format_transit_period(transit_data: dict[str, Any]) -> str:
     """Format transit period data as LLM-optimized text (legacy snapshot format).
 
@@ -436,6 +508,90 @@ def _format_short_date(date_str: str) -> str:
         return d.strftime("%b %d").replace(" 0", " ")  # "Jan 05" -> "Jan 5"
     except (ValueError, AttributeError):
         return date_str
+
+
+def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, Any]) -> str:
+    """Format natal chart + monthly transits for proactive messages.
+
+    Combines natal chart data with monthly transit periods, excluding daily transits.
+    Designed for proactive messages where the exact viewing time is unknown.
+
+    Args:
+        chart_data: Natal chart data from generate_profile()
+        transit_data: Transit period data from transit_period_service
+
+    Returns:
+        Multi-line formatted text with natal chart + monthly transits
+    """
+    lines = []
+
+    # Format natal planets
+    natal_chart = chart_data.get("natal_chart", {})
+    planets = natal_chart.get("planets", {})
+    if planets:
+        lines.append("PLANETS")
+        for planet_key, planet_data in planets.items():
+            if isinstance(planet_data, dict) and "name" in planet_data:
+                lines.append(format_planet(planet_data))
+        lines.append("")
+
+    # Format points (Ascendant, MC, etc.)
+    points = natal_chart.get("points", {})
+    if points:
+        lines.append("POINTS")
+        for point_key, point_data in points.items():
+            if isinstance(point_data, dict) and "name" in point_data:
+                lines.append(format_planet(point_data))
+        lines.append("")
+
+    # Format houses
+    houses = natal_chart.get("houses", {})
+    if houses:
+        lines.append("HOUSES")
+        for house_key, house_data in houses.items():
+            if isinstance(house_data, dict):
+                name = house_data.get("name", house_key)
+                sign = house_data.get("sign", "Unknown")
+                lines.append(f"{name}: {sign}")
+        lines.append("")
+
+    # Format natal aspects
+    aspects = chart_data.get("aspects", {})
+    natal_aspects = aspects.get("natal", [])
+    if natal_aspects:
+        filtered = filter_aspects(natal_aspects)
+        if filtered:
+            lines.append("NATAL ASPECTS")
+            for aspect in filtered:
+                lines.append(format_aspect(aspect))
+            lines.append("")
+
+    # Format monthly transits (from transit_period_service)
+    # Uses the same format as format_transit_periods
+    period = transit_data.get("period", {})
+    start = period.get("start", "")
+    end = period.get("end", "")
+    transit_aspects = transit_data.get("transit_aspects", [])
+
+    if transit_aspects:
+        lines.append(f"MONTHLY TRANSITS {start} to {end}")
+        for aspect in transit_aspects:
+            transit_planet = aspect.get("transit_planet", "")
+            natal_planet = aspect.get("natal_planet", "")
+            aspect_type = aspect.get("aspect_type", "")
+            start_date = aspect.get("start_date", "")
+            end_date = aspect.get("end_date", "")
+            exact_date = aspect.get("exact_date", "")
+            exact_orb = aspect.get("exact_orb", 0)
+
+            aspect_short = _shorten_aspect(aspect_type)
+            multi_year = _spans_multiple_years(start_date, end_date)
+            date_range = _format_date_range(start_date, end_date)
+            exact_fmt = _format_compact_date(exact_date, include_year=multi_year)
+
+            lines.append(f"{transit_planet} {aspect_short} {natal_planet}: {date_range} exact {exact_fmt} ({exact_orb}°)")
+
+    return "\n".join(lines).strip()
 
 
 def format_synastry(synastry_data: dict[str, Any]) -> str:

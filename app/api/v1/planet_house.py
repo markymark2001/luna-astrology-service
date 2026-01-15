@@ -37,6 +37,7 @@ def get_profile_service() -> ProfileService | None:
     return None
 
 
+# Called by: backend/app/application/get_home_content.py
 @router.post(
     "/planet-house",
     status_code=status.HTTP_200_OK,

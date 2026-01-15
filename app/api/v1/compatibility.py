@@ -20,6 +20,7 @@ def get_synastry_service() -> SynastryService | None:
     return None
 
 
+# Called by: backend/app/infrastructure/ai/tools/definitions/synastry_tool.py
 @router.post(
     "/synastry",
     status_code=status.HTTP_200_OK,

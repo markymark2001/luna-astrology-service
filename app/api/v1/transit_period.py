@@ -20,6 +20,7 @@ def get_transit_period_service() -> TransitPeriodService | None:
     return None
 
 
+# Called by: backend/app/infrastructure/ai/tools/definitions/transit_period_tool.py
 @router.post(
     "/transits/period",
     status_code=status.HTTP_200_OK,
