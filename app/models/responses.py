@@ -1,6 +1,7 @@
 """Standardized API response models."""
 
-from typing import Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -16,8 +17,8 @@ class StandardResponse(BaseModel):
 
     status: Literal["success", "error"] = Field(..., description="Response status")
     timestamp: str = Field(..., description="ISO 8601 timestamp")
-    data: Optional[dict] = Field(None, description="Response data (success only)")
-    error: Optional[ErrorDetail] = Field(None, description="Error details (error only)")
+    data: dict | None = Field(None, description="Response data (success only)")
+    error: ErrorDetail | None = Field(None, description="Error details (error only)")
 
 
 class PlanetHouseResponse(BaseModel):

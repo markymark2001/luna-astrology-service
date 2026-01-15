@@ -9,24 +9,24 @@ The service is automatically synced from the private Luna repository.
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 
-from app.config.settings import settings
-from app.config.astrology_presets import get_preset, DetailLevel
 from app.api.v1 import api_router
-from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
-from app.application.profile_service import ProfileService
 from app.application.compatibility_service import SynastryService
+from app.application.profile_service import ProfileService
 from app.application.transit_period_service import TransitPeriodService
-from app.core.exceptions import (
-    AstrologyServiceException,
-    ChartCalculationException,
-    InvalidBirthDataException,
-)
+from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.settings import settings
 from app.core.error_handlers import (
     handle_astrology_service_error,
     handle_chart_calculation_error,
     handle_generic_exception,
     handle_invalid_birth_data,
 )
+from app.core.exceptions import (
+    AstrologyServiceException,
+    ChartCalculationException,
+    InvalidBirthDataException,
+)
+from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
 # Create FastAPI application
 app = FastAPI(
@@ -51,7 +51,7 @@ transit_period_service_instance = TransitPeriodService(provider=provider)
 
 
 # Override dependency injection using FastAPI's built-in system
-from app.api.v1 import profile, compatibility, transit_period, planet_house
+from app.api.v1 import compatibility, planet_house, profile, transit_period
 
 app.dependency_overrides[profile.get_profile_service] = lambda: profile_service_instance
 app.dependency_overrides[compatibility.get_synastry_service] = lambda: synastry_service_instance

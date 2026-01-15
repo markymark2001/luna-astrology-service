@@ -1,6 +1,7 @@
 """FastAPI exception handlers for simple error responses."""
 
 import json
+
 from fastapi import Request, status
 from fastapi.responses import PlainTextResponse
 
@@ -13,9 +14,10 @@ from app.core.exceptions import (
 
 async def handle_invalid_birth_data(
     request: Request,
-    exc: InvalidBirthDataException
+    exc: Exception
 ) -> PlainTextResponse:
     """Handle invalid birth data exceptions."""
+    assert isinstance(exc, InvalidBirthDataException)
     return PlainTextResponse(
         content=json.dumps({"error": exc.code, "message": exc.message}),
         status_code=status.HTTP_400_BAD_REQUEST,
@@ -25,9 +27,10 @@ async def handle_invalid_birth_data(
 
 async def handle_chart_calculation_error(
     request: Request,
-    exc: ChartCalculationException
+    exc: Exception
 ) -> PlainTextResponse:
     """Handle chart calculation exceptions."""
+    assert isinstance(exc, ChartCalculationException)
     return PlainTextResponse(
         content=json.dumps({"error": exc.code, "message": exc.message}),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -37,9 +40,10 @@ async def handle_chart_calculation_error(
 
 async def handle_astrology_service_error(
     request: Request,
-    exc: AstrologyServiceException
+    exc: Exception
 ) -> PlainTextResponse:
     """Handle generic astrology service exceptions."""
+    assert isinstance(exc, AstrologyServiceException)
     return PlainTextResponse(
         content=json.dumps({"error": exc.code, "message": exc.message}),
         status_code=exc.status_code,

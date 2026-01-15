@@ -1,7 +1,7 @@
 """Transit period domain model - represents active transits with timing."""
 
 from datetime import date
-from typing import Optional
+
 from pydantic import BaseModel
 
 

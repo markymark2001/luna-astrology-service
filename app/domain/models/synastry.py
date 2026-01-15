@@ -1,6 +1,7 @@
 """Synastry domain model."""
 
 from typing import Any
+
 from pydantic import BaseModel
 
 from app.domain.models.natal_chart import NatalChart

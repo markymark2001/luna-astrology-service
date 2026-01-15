@@ -6,7 +6,7 @@ from typing import Any
 def extract_celestial_objects(
     subject: Any,
     object_names: list[str],
-    exclude_fields: set[str] = {'emoji', 'point_type'}
+    exclude_fields: set[str] | None = None
 ) -> dict[str, Any]:
     """
     Extract celestial objects (planets, points, houses) from Kerykeion subject.
@@ -24,6 +24,8 @@ def extract_celestial_objects(
     Example:
         planets = extract_celestial_objects(subject, ['sun', 'moon', 'mercury'])
     """
+    if exclude_fields is None:
+        exclude_fields = {'emoji', 'point_type'}
     result = {}
     for name in object_names:
         obj = getattr(subject, name, None)
@@ -35,7 +37,7 @@ def extract_celestial_objects(
 def filter_aspects_by_orb(
     aspects_result: Any,
     max_orb: float,
-    exclude_fields: set[str] = {'emoji', 'point_type'}
+    exclude_fields: set[str] | None = None
 ) -> list[dict[str, Any]]:
     """
     Extract and filter aspects by orb tolerance.
@@ -53,6 +55,8 @@ def filter_aspects_by_orb(
     Example:
         aspects = filter_aspects_by_orb(aspects_result, max_orb=10.0)
     """
+    if exclude_fields is None:
+        exclude_fields = {'emoji', 'point_type'}
     aspects = []
     for aspect_obj in aspects_result.aspects:
         if abs(aspect_obj.orbit) < max_orb:

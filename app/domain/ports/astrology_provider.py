@@ -1,7 +1,7 @@
 """Astrology provider port (interface) for hexagonal architecture."""
 
 from abc import ABC, abstractmethod
-from datetime import datetime, date
+from datetime import date, datetime
 
 from app.domain.models import BirthData, NatalChart, Synastry, Transit, TransitPeriodResult
 

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import profile, compatibility, transit_period, planet_house
+from app.api.v1 import compatibility, planet_house, profile, transit_period
 
 # Create v1 API router
 api_router = APIRouter(prefix="/v1")

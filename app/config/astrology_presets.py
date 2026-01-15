@@ -7,7 +7,6 @@ Different API endpoints can select different presets based on their needs
 """
 from dataclasses import dataclass
 from enum import Enum
-from typing import List
 
 
 class DetailLevel(str, Enum):
@@ -28,9 +27,9 @@ class AstrologyConfig:
     """
 
     # Celestial bodies
-    planets: List[str]
-    points: List[str]
-    houses: List[str]
+    planets: list[str]
+    points: list[str]
+    houses: list[str]
 
     # Aspect orb tolerances (in degrees)
     natal_orb: float       # For natal chart aspects

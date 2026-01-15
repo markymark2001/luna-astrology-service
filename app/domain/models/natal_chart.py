@@ -1,6 +1,7 @@
 """Natal chart domain model."""
 
-from typing import Any, Optional
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 from app.domain.models.birth_data import BirthData
@@ -21,7 +22,7 @@ class NatalChart(BaseModel):
 
     # Optional: keep reference to provider-specific object for advanced operations
     # This allows synastry calculations without recalculating the chart
-    provider_data: Optional[Any] = Field(default=None, exclude=True)
+    provider_data: Any | None = Field(default=None, exclude=True)
 
     class Config:
         arbitrary_types_allowed = True

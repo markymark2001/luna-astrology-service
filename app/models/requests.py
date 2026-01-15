@@ -1,7 +1,7 @@
 """API request models using domain models for DRY compliance."""
 
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, Field
 
 from app.domain.models.birth_data import BirthData
@@ -25,7 +25,7 @@ class ProfileRequest(BirthData):
     """
 
     # Optional transit date (defaults to current time)
-    transit_date: Optional[datetime] = Field(
+    transit_date: datetime | None = Field(
         None,
         description="Date/time for transit calculation (defaults to current time)"
     )

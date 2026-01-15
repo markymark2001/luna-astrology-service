@@ -3,13 +3,13 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import PlainTextResponse
 
-from app.models.requests import SynastryRequest
 from app.application.compatibility_service import SynastryService
+from app.models.requests import SynastryRequest
 
 router = APIRouter(prefix="/astrology", tags=["Synastry"])
 
 
-def get_synastry_service() -> SynastryService:
+def get_synastry_service() -> SynastryService | None:
     """
     Dependency injection for SynastryService.
 
@@ -29,7 +29,7 @@ def get_synastry_service() -> SynastryService:
 )
 async def get_synastry(
     request: SynastryRequest,
-    synastry_service: SynastryService = Depends(get_synastry_service)
+    synastry_service: SynastryService | None = Depends(get_synastry_service)
 ) -> str:
     """
     Get synastry analysis as compact text for LLM context.
@@ -49,6 +49,7 @@ async def get_synastry(
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
+    assert synastry_service is not None, "SynastryService not configured"
     return synastry_service.analyze_synastry_compact(
         person1_data=request.person1,
         person2_data=request.person2

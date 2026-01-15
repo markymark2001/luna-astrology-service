@@ -1,10 +1,9 @@
 """Response builder utilities for standardized API responses."""
 
-import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from app.models.responses import StandardResponse, ErrorDetail
+from app.models.responses import ErrorDetail, StandardResponse
 
 
 def success_response(data: dict[str, Any]) -> str:
@@ -19,8 +18,9 @@ def success_response(data: dict[str, Any]) -> str:
     """
     response = StandardResponse(
         status="success",
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         data=data,
+        error=None,
     )
     return response.model_dump_json()
 
@@ -38,7 +38,8 @@ def error_response(code: str, message: str) -> str:
     """
     response = StandardResponse(
         status="error",
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
+        data=None,
         error=ErrorDetail(code=code, message=message),
     )
     return response.model_dump_json()

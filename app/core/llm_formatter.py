@@ -8,7 +8,6 @@ Output style: "Sun in Aries 15 deg (H1, Rx)", "Sun conjunct Moon (orb 2.3)"
 
 from typing import Any
 
-
 # Essential fields to keep when simplifying data
 ESSENTIAL_PLANET_FIELDS = {"name", "sign", "position", "house", "retrograde"}
 ESSENTIAL_ASPECT_FIELDS = {"p1_name", "p2_name", "aspect", "orbit"}

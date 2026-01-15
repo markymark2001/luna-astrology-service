@@ -3,13 +3,13 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import PlainTextResponse
 
-from app.models.requests import ProfileRequest
 from app.application.profile_service import ProfileService
+from app.models.requests import ProfileRequest
 
 router = APIRouter(prefix="/astrology", tags=["Astrology Profile"])
 
 
-def get_profile_service() -> ProfileService:
+def get_profile_service() -> ProfileService | None:
     """
     Dependency injection for ProfileService.
 
@@ -29,7 +29,7 @@ def get_profile_service() -> ProfileService:
 )
 async def get_profile(
     request: ProfileRequest,
-    profile_service: ProfileService = Depends(get_profile_service)
+    profile_service: ProfileService | None = Depends(get_profile_service)
 ) -> str:
     """
     Get complete astrological profile as compact text for LLM context.
@@ -53,6 +53,7 @@ async def get_profile(
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
+    assert profile_service is not None, "ProfileService not configured"
     return profile_service.generate_profile_compact(
         birth_data=request,
         transit_date=request.transit_date

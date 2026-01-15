@@ -1,12 +1,13 @@
 """Kerykeion astrology provider implementation."""
 
 from collections import defaultdict
-from datetime import datetime, date, timezone
-from kerykeion import AstrologicalSubjectFactory, AspectsFactory, EphemerisDataFactory, TransitsTimeRangeFactory
+from datetime import UTC, date, datetime
 
+from kerykeion import AspectsFactory, AstrologicalSubjectFactory, EphemerisDataFactory, TransitsTimeRangeFactory
+
+from app.config.astrology_presets import AstrologyConfig
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.core.extractors import extract_celestial_objects, filter_aspects_by_orb, filter_personal_synastry_aspects
-from app.config.astrology_presets import AstrologyConfig
 from app.domain.models import BirthData, NatalChart, Synastry, Transit, TransitAspect, TransitPeriodResult
 from app.domain.ports import IAstrologyProvider
 
@@ -267,8 +268,8 @@ class KerykeionProvider(IAstrologyProvider):
                 raise ChartCalculationException("Natal chart missing provider data")
 
             # Convert dates to datetime for Kerykeion
-            start_dt = datetime(start_date.year, start_date.month, start_date.day, 12, 0, tzinfo=timezone.utc)
-            end_dt = datetime(end_date.year, end_date.month, end_date.day, 12, 0, tzinfo=timezone.utc)
+            start_dt = datetime(start_date.year, start_date.month, start_date.day, 12, 0, tzinfo=UTC)
+            end_dt = datetime(end_date.year, end_date.month, end_date.day, 12, 0, tzinfo=UTC)
 
             # Determine step size based on period length
             # Daily for short periods, weekly/monthly for longer

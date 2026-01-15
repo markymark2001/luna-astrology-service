@@ -1,6 +1,6 @@
 """Celestial body domain models."""
 
-from typing import Optional
+
 from pydantic import BaseModel
 
 
@@ -8,10 +8,10 @@ class CelestialBody(BaseModel):
     """Base model for celestial bodies (planets, points, houses)."""
 
     name: str
-    sign: Optional[str] = None
-    position: Optional[float] = None
-    retrograde: Optional[bool] = None
-    house: Optional[str] = None
+    sign: str | None = None
+    position: float | None = None
+    retrograde: bool | None = None
+    house: str | None = None
 
 
 class Planet(CelestialBody):
@@ -28,5 +28,5 @@ class House(BaseModel):
     """Astrological house model."""
 
     name: str
-    sign: Optional[str] = None
-    position: Optional[float] = None
+    sign: str | None = None
+    position: float | None = None

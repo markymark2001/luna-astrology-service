@@ -3,13 +3,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import PlainTextResponse
 
-from app.models.requests import TransitPeriodRequest
 from app.application.transit_period_service import TransitPeriodService
+from app.models.requests import TransitPeriodRequest
 
 router = APIRouter(prefix="/astrology", tags=["Astrology Transit Period"])
 
 
-def get_transit_period_service() -> TransitPeriodService:
+def get_transit_period_service() -> TransitPeriodService | None:
     """
     Dependency injection for TransitPeriodService.
 
@@ -29,7 +29,7 @@ def get_transit_period_service() -> TransitPeriodService:
 )
 async def get_transit_period(
     request: TransitPeriodRequest,
-    transit_period_service: TransitPeriodService = Depends(get_transit_period_service)
+    transit_period_service: TransitPeriodService | None = Depends(get_transit_period_service)
 ) -> str:
     """
     Get transit data for any date range as compact text for LLM context.
@@ -57,6 +57,7 @@ async def get_transit_period(
     Raises:
         HTTPException: Handled by FastAPI exception handlers
     """
+    assert transit_period_service is not None, "TransitPeriodService not configured"
     try:
         return transit_period_service.generate_transit_period_compact(
             birth_data=request,

@@ -1,11 +1,11 @@
 """Planet house position API endpoint."""
 
-from fastapi import APIRouter, Depends, status, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.models.requests import PlanetHouseRequest
-from app.models.responses import PlanetHouseResponse
 from app.application.profile_service import ProfileService
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
+from app.models.requests import PlanetHouseRequest
+from app.models.responses import PlanetHouseResponse
 
 router = APIRouter(prefix="/astrology", tags=["Astrology Planet House"])
 
@@ -26,7 +26,7 @@ HOUSE_NAME_TO_NUMBER = {
 }
 
 
-def get_profile_service() -> ProfileService:
+def get_profile_service() -> ProfileService | None:
     """
     Dependency injection for ProfileService.
 
@@ -46,7 +46,7 @@ def get_profile_service() -> ProfileService:
 )
 async def get_planet_house(
     request: PlanetHouseRequest,
-    profile_service: ProfileService = Depends(get_profile_service)
+    profile_service: ProfileService | None = Depends(get_profile_service)
 ) -> PlanetHouseResponse:
     """
     Get a specific planet's house position in the natal chart.
@@ -66,6 +66,7 @@ async def get_planet_house(
     Raises:
         HTTPException: 400 for invalid data, 404 if planet not found, 500 for calculation errors
     """
+    assert profile_service is not None, "ProfileService not configured"
     try:
         # Generate natal chart using profile service
         profile_data = profile_service.generate_profile(

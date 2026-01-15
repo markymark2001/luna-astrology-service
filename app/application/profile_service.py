@@ -1,6 +1,6 @@
 """Profile application service - orchestrates natal chart and transit calculations."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.core.llm_formatter import format_natal_chart
 from app.domain.models import BirthData
@@ -39,7 +39,7 @@ class ProfileService:
 
         # Calculate transits (default to now if not specified)
         if transit_date is None:
-            transit_date = datetime.now(timezone.utc)
+            transit_date = datetime.now(UTC)
 
         transits = self.provider.calculate_transits(natal_chart, transit_date)
 

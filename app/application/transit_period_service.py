@@ -1,8 +1,8 @@
 """Transit period application service - calculates transits over a date range."""
 
-from datetime import datetime, date, timezone
+from datetime import date
 
-from app.core.llm_formatter import simplify_planets, filter_aspects, format_transit_periods
+from app.core.llm_formatter import filter_aspects, format_transit_periods, simplify_planets
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 
