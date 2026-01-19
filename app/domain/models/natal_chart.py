@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.models.birth_data import BirthData
 
@@ -14,6 +14,8 @@ class NatalChart(BaseModel):
     Contains all astrological data for a person's birth chart.
     """
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     birth_data: BirthData
     planets: dict[str, Any]
     houses: dict[str, Any]
@@ -23,6 +25,3 @@ class NatalChart(BaseModel):
     # Optional: keep reference to provider-specific object for advanced operations
     # This allows synastry calculations without recalculating the chart
     provider_data: Any | None = Field(default=None, exclude=True)
-
-    class Config:
-        arbitrary_types_allowed = True

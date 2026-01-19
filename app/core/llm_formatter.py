@@ -594,16 +594,41 @@ def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, A
     return "\n".join(lines).strip()
 
 
+def _score_to_percentage(score: int) -> int:
+    """Convert Ciro Discepolo relationship score to percentage.
+
+    Maps 0-30 score range to 0-100%, capped at both ends.
+
+    Args:
+        score: Raw relationship score (typically 0-30, can exceed)
+
+    Returns:
+        Percentage value 0-100
+    """
+    return max(0, min(100, round(score / 30 * 100)))
+
+
 def format_synastry(synastry_data: dict[str, Any]) -> str:
     """Format synastry data as LLM-optimized text.
 
     Args:
-        synastry_data: Synastry data with cross-chart aspects
+        synastry_data: Synastry data with cross-chart aspects and optional relationship_score
 
     Returns:
         Multi-line formatted text block
     """
-    lines = ["SYNASTRY ASPECTS"]
+    lines = []
+
+    # Add compatibility score if present
+    relationship_score = synastry_data.get("relationship_score")
+    if relationship_score:
+        percentage = _score_to_percentage(relationship_score["score_value"])
+        lines.append(f"COMPATIBILITY: {percentage}%")
+        if relationship_score.get("is_destiny_sign"):
+            lines.append("Destiny Sign: Yes")
+        lines.append("")  # Blank line before aspects
+
+    lines.append("SYNASTRY ASPECTS")
 
     synastry = synastry_data.get("synastry", {})
     aspects = synastry.get("aspects", [])

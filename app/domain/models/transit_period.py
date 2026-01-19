@@ -2,11 +2,13 @@
 
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class TransitAspect(BaseModel):
     """A single transit aspect with timing information."""
+
+    model_config = ConfigDict(frozen=True)
 
     transit_planet: str
     natal_planet: str
@@ -16,16 +18,12 @@ class TransitAspect(BaseModel):
     exact_date: date
     exact_orb: float  # Orb at exact date (closest approach)
 
-    class Config:
-        frozen = True
-
 
 class TransitPeriodResult(BaseModel):
     """Result of transit period calculation with grouped aspects."""
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     start_date: date
     end_date: date
     aspects: list[TransitAspect]
-
-    class Config:
-        arbitrary_types_allowed = True

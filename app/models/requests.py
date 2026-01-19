@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.domain.models.birth_data import BirthData
 
@@ -24,14 +24,8 @@ class ProfileRequest(BirthData):
     Inherits birth data fields from domain BirthData model.
     """
 
-    # Optional transit date (defaults to current time)
-    transit_date: datetime | None = Field(
-        None,
-        description="Date/time for transit calculation (defaults to current time)"
-    )
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "year": 1990,
                 "month": 3,
@@ -44,6 +38,13 @@ class ProfileRequest(BirthData):
                 "transit_date": "2025-10-30T12:00:00Z"
             }
         }
+    )
+
+    # Optional transit date (defaults to current time)
+    transit_date: datetime | None = Field(
+        None,
+        description="Date/time for transit calculation (defaults to current time)"
+    )
 
 
 class TransitPeriodRequest(BirthData):
@@ -53,19 +54,8 @@ class TransitPeriodRequest(BirthData):
     Inherits birth data fields from domain BirthData model.
     """
 
-    start_date: str = Field(
-        ...,
-        description="Start date for transit period in YYYY-MM-DD format",
-        pattern=r"^\d{4}-\d{2}-\d{2}$"
-    )
-    end_date: str = Field(
-        ...,
-        description="End date for transit period in YYYY-MM-DD format",
-        pattern=r"^\d{4}-\d{2}-\d{2}$"
-    )
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "year": 1990,
                 "month": 3,
@@ -79,6 +69,18 @@ class TransitPeriodRequest(BirthData):
                 "end_date": "2026-12-31"
             }
         }
+    )
+
+    start_date: str = Field(
+        ...,
+        description="Start date for transit period in YYYY-MM-DD format",
+        pattern=r"^\d{4}-\d{2}-\d{2}$"
+    )
+    end_date: str = Field(
+        ...,
+        description="End date for transit period in YYYY-MM-DD format",
+        pattern=r"^\d{4}-\d{2}-\d{2}$"
+    )
 
 
 class PlanetHouseRequest(BirthData):
@@ -88,13 +90,8 @@ class PlanetHouseRequest(BirthData):
     Inherits birth data fields from domain BirthData model.
     """
 
-    planet: str = Field(
-        ...,
-        description="Planet name (e.g., 'sun', 'moon', 'venus')"
-    )
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "planet": "venus",
                 "year": 1990,
@@ -107,16 +104,19 @@ class PlanetHouseRequest(BirthData):
                 "timezone": "America/New_York"
             }
         }
+    )
+
+    planet: str = Field(
+        ...,
+        description="Planet name (e.g., 'sun', 'moon', 'venus')"
+    )
 
 
 class SynastryRequest(BaseModel):
     """Request model for synastry analysis (relationship compatibility)."""
 
-    person1: BirthData = Field(..., description="Birth data for first person")
-    person2: BirthData = Field(..., description="Birth data for second person")
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "person1": {
                     "year": 1990,
@@ -140,3 +140,7 @@ class SynastryRequest(BaseModel):
                 }
             }
         }
+    )
+
+    person1: BirthData = Field(..., description="Birth data for first person")
+    person2: BirthData = Field(..., description="Birth data for second person")

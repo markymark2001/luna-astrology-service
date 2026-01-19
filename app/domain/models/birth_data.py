@@ -1,7 +1,7 @@
 """Birth data domain model."""
 
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class BirthData(BaseModel):
@@ -21,19 +21,8 @@ class BirthData(BaseModel):
     longitude: float | None = Field(-0.1278, ge=-180, le=180, description="Birth longitude (defaults to London: -0.1278)")
     timezone: str | None = Field("Europe/London", description="IANA timezone (defaults to Europe/London)")
 
-    @field_validator('timezone')
-    @classmethod
-    def validate_timezone(cls, v: str | None) -> str:
-        """Validate timezone format."""
-        # Use default if None or empty
-        if not v:
-            return "Europe/London"
-        if '/' not in v:
-            raise ValueError("Timezone must be in IANA format (e.g., 'America/New_York')")
-        return v
-
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "year": 1990,
                 "month": 3,
@@ -45,3 +34,15 @@ class BirthData(BaseModel):
                 "timezone": "America/New_York"
             }
         }
+    )
+
+    @field_validator('timezone')
+    @classmethod
+    def validate_timezone(cls, v: str | None) -> str:
+        """Validate timezone format."""
+        # Use default if None or empty
+        if not v:
+            return "Europe/London"
+        if '/' not in v:
+            raise ValueError("Timezone must be in IANA format (e.g., 'America/New_York')")
+        return v

@@ -3,12 +3,26 @@
 from collections import defaultdict
 from datetime import UTC, date, datetime
 
-from kerykeion import AspectsFactory, AstrologicalSubjectFactory, EphemerisDataFactory, TransitsTimeRangeFactory
+from kerykeion import (
+    AspectsFactory,
+    AstrologicalSubjectFactory,
+    EphemerisDataFactory,
+    RelationshipScoreFactory,
+    TransitsTimeRangeFactory,
+)
 
 from app.config.astrology_presets import AstrologyConfig
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.core.extractors import extract_celestial_objects, filter_aspects_by_orb, filter_personal_synastry_aspects
-from app.domain.models import BirthData, NatalChart, Synastry, Transit, TransitAspect, TransitPeriodResult
+from app.domain.models import (
+    BirthData,
+    NatalChart,
+    RelationshipScore,
+    Synastry,
+    Transit,
+    TransitAspect,
+    TransitPeriodResult,
+)
 from app.domain.ports import IAstrologyProvider
 
 # Planets to track for transit periods (skip Moon - too fast, creates noise)
@@ -166,11 +180,22 @@ class KerykeionProvider(IAstrologyProvider):
             # Filter to personally relevant aspects (remove generational outer-to-outer)
             aspects = filter_personal_synastry_aspects(aspects)
 
+            # Calculate relationship score using Ciro Discepolo's method
+            score_factory = RelationshipScoreFactory(
+                subject1, subject2, use_only_major_aspects=True
+            )
+            score_result = score_factory.get_relationship_score()
+            relationship_score = RelationshipScore(
+                score_value=score_result.score_value,
+                is_destiny_sign=score_result.is_destiny_sign,
+            )
+
             # Build domain model
             synastry = Synastry(
                 chart1=chart1,
                 chart2=chart2,
-                aspects=aspects
+                aspects=aspects,
+                relationship_score=relationship_score,
             )
 
             return synastry

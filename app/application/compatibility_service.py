@@ -30,7 +30,7 @@ class SynastryService:
             person2_data: Second person's birth information
 
         Returns:
-            Dict containing only synastry aspects (cross-chart interactions)
+            Dict containing synastry aspects and relationship score
         """
         # Calculate both natal charts
         chart1 = self.provider.calculate_natal_chart(person1_data)
@@ -39,11 +39,20 @@ class SynastryService:
         # Calculate synastry
         synastry = self.provider.calculate_synastry(chart1, chart2)
 
-        # Return only synastry aspects (no redundant natal chart data)
+        # Build relationship score dict if available
+        relationship_score = None
+        if synastry.relationship_score:
+            relationship_score = {
+                "score_value": synastry.relationship_score.score_value,
+                "is_destiny_sign": synastry.relationship_score.is_destiny_sign,
+            }
+
+        # Return synastry data with relationship score
         return {
             "synastry": {
                 "aspects": synastry.aspects
-            }
+            },
+            "relationship_score": relationship_score,
         }
 
     def analyze_synastry_compact(self, person1_data: BirthData, person2_data: BirthData) -> str:
