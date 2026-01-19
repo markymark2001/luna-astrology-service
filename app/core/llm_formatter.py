@@ -6,6 +6,7 @@ to reduce token usage when passing to LLMs (~80% reduction).
 Output style: "Sun in Aries 15 deg (H1, Rx)", "Sun conjunct Moon (orb 2.3)"
 """
 
+import math
 from typing import Any
 
 # Essential fields to keep when simplifying data
@@ -597,7 +598,12 @@ def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, A
 def _score_to_percentage(score: int) -> int:
     """Convert Ciro Discepolo relationship score to percentage.
 
-    Maps 0-30 score range to 0-100%, capped at both ends.
+    Uses square root curve to align with Kerykeion's qualitative categories:
+    - 0-5 (Minimal) → 0-41%
+    - 5-10 (Medium) → 41-58%
+    - 10-15 (Important) → 58-71%
+    - 15-20 (Very Important) → 71-82%
+    - 20-30 (Exceptional) → 82-100%
 
     Args:
         score: Raw relationship score (typically 0-30, can exceed)
@@ -605,7 +611,7 @@ def _score_to_percentage(score: int) -> int:
     Returns:
         Percentage value 0-100
     """
-    return max(0, min(100, round(score / 30 * 100)))
+    return max(0, min(100, round(math.sqrt(score / 30) * 100)))
 
 
 def format_synastry(synastry_data: dict[str, Any]) -> str:
