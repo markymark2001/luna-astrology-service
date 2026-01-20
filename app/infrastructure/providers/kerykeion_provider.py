@@ -1,7 +1,7 @@
 """Kerykeion astrology provider implementation."""
 
 from collections import defaultdict
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, time
 
 from kerykeion import (
     AspectsFactory,
@@ -10,6 +10,7 @@ from kerykeion import (
     RelationshipScoreFactory,
     TransitsTimeRangeFactory,
 )
+from kerykeion.schemas.kr_models import AstrologicalSubjectModel
 
 from app.config.astrology_presets import AstrologyConfig
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
@@ -453,3 +454,50 @@ class KerykeionProvider(IAstrologyProvider):
         orb_w = max(1, 10 - (exact_orb * 3))
 
         return transit_w * natal_w * aspect_w * orb_w
+
+    def generate_ephemeris_for_range(
+        self,
+        start_date: date,
+        end_date: date,
+        location: BirthData,
+        step_days: int = 1,
+    ) -> list[AstrologicalSubjectModel]:
+        """
+        Generate planetary positions for a date range using Kerykeion's EphemerisDataFactory.
+
+        This is much faster than calculating individual charts for each day,
+        as it uses ephemeris data directly (~100x faster for multi-year ranges).
+
+        Args:
+            start_date: Start of the date range
+            end_date: End of the date range
+            location: Reference location for calculations (lat/lng/timezone)
+            step_days: Days between ephemeris points (1=daily, 7=weekly for faster soulmate search)
+
+        Returns:
+            List of AstrologicalSubjectModel objects with planetary positions
+
+        Raises:
+            ChartCalculationException: If ephemeris calculation fails
+        """
+        try:
+            # Convert dates to datetime at noon
+            start_dt = datetime.combine(start_date, time(12, 0))
+            end_dt = datetime.combine(end_date, time(12, 0))
+
+            # Use EphemerisDataFactory for fast bulk calculation
+            ephemeris = EphemerisDataFactory(
+                start_datetime=start_dt,
+                end_datetime=end_dt,
+                lng=location.longitude,
+                lat=location.latitude,
+                tz_str=location.timezone,
+                step_type='days',
+                step=step_days,
+                max_days=15000,  # Allow up to ~40 years
+            )
+
+            return ephemeris.get_ephemeris_data_as_astrological_subjects()
+
+        except Exception as e:
+            raise ChartCalculationException(f"Failed to generate ephemeris: {str(e)}")
