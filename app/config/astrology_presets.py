@@ -6,10 +6,10 @@ Different API endpoints can select different presets based on their needs
 (e.g., LLM-optimized vs comprehensive data).
 """
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 
 
-class DetailLevel(str, Enum):
+class DetailLevel(StrEnum):
     """Preset detail levels for astrological calculations."""
 
     MINIMAL = "minimal"      # Bare minimum for quick insights
