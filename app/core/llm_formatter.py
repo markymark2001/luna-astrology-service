@@ -611,7 +611,9 @@ def _score_to_percentage(score: int) -> int:
     Returns:
         Percentage value 0-100
     """
-    return max(0, min(100, round(math.sqrt(score / 30) * 100)))
+    if score <= 0:
+        return 0
+    return min(100, round(math.sqrt(score / 30) * 100))
 
 
 def format_synastry(synastry_data: dict[str, Any]) -> str:

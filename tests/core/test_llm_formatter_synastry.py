@@ -4,22 +4,22 @@ from app.core.llm_formatter import _score_to_percentage, format_synastry
 
 
 class TestScoreToPercentage:
-    """Tests for _score_to_percentage conversion."""
+    """Tests for _score_to_percentage using the Kerykeion sqrt curve."""
 
     def test_score_0_maps_to_0_percent(self):
         """Score 0 maps to 0%."""
         assert _score_to_percentage(0) == 0
 
     def test_score_15_maps_to_50_percent(self):
-        """Score 15 maps to 50%."""
-        assert _score_to_percentage(15) == 50
+        """Score 15 maps to 71% (sqrt curve)."""
+        assert _score_to_percentage(15) == 71
 
     def test_score_30_maps_to_100_percent(self):
-        """Score 30 maps to 100%."""
+        """Score 30 maps to 100% (sqrt curve)."""
         assert _score_to_percentage(30) == 100
 
     def test_score_above_30_caps_at_100_percent(self):
-        """Score above 30 caps at 100%."""
+        """Score above 30 caps at 100% (sqrt curve)."""
         assert _score_to_percentage(35) == 100
         assert _score_to_percentage(50) == 100
 
@@ -29,19 +29,19 @@ class TestScoreToPercentage:
         assert _score_to_percentage(-20) == 0
 
     def test_score_24_maps_to_80_percent(self):
-        """Score 24 maps to 80%."""
-        assert _score_to_percentage(24) == 80
+        """Score 24 maps to 89% (sqrt curve)."""
+        assert _score_to_percentage(24) == 89
 
     def test_score_12_maps_to_40_percent(self):
-        """Score 12 maps to 40%."""
-        assert _score_to_percentage(12) == 40
+        """Score 12 maps to 63% (sqrt curve)."""
+        assert _score_to_percentage(12) == 63
 
 
 class TestFormatSynastryWithScore:
-    """Tests for format_synastry including relationship score."""
+    """Tests for format_synastry with Kerykeion sqrt-curve compatibility."""
 
     def test_format_synastry_includes_percentage(self):
-        """format_synastry includes COMPATIBILITY percentage when score present."""
+        """format_synastry includes sqrt-curve COMPATIBILITY when score present."""
         synastry_data = {
             "synastry": {
                 "aspects": [
@@ -56,7 +56,7 @@ class TestFormatSynastryWithScore:
 
         result = format_synastry(synastry_data)
 
-        assert "COMPATIBILITY: 50%" in result
+        assert "COMPATIBILITY: 71%" in result
 
     def test_format_synastry_shows_destiny_sign_when_true(self):
         """format_synastry shows Destiny Sign: Yes when is_destiny_sign is True."""
@@ -143,7 +143,7 @@ class TestFormatSynastryWithScore:
         assert score_pos < aspects_pos, "COMPATIBILITY should appear before SYNASTRY ASPECTS"
 
     def test_format_synastry_high_score_shows_high_percentage(self):
-        """High score (24) shows 80%."""
+        """High score (24) shows 89% (sqrt curve)."""
         synastry_data = {
             "synastry": {
                 "aspects": []
@@ -156,7 +156,7 @@ class TestFormatSynastryWithScore:
 
         result = format_synastry(synastry_data)
 
-        assert "COMPATIBILITY: 80%" in result
+        assert "COMPATIBILITY: 89%" in result
 
     def test_format_synastry_capped_score_shows_100_percent(self):
         """Score above 30 shows 100%."""
