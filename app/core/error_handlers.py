@@ -2,6 +2,7 @@
 
 import json
 
+import sentry_sdk
 from fastapi import Request, status
 from fastapi.responses import PlainTextResponse
 
@@ -31,6 +32,7 @@ async def handle_chart_calculation_error(
 ) -> PlainTextResponse:
     """Handle chart calculation exceptions."""
     assert isinstance(exc, ChartCalculationException)
+    sentry_sdk.capture_exception(exc)
     return PlainTextResponse(
         content=json.dumps({"error": exc.code, "message": exc.message}),
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -44,6 +46,7 @@ async def handle_astrology_service_error(
 ) -> PlainTextResponse:
     """Handle generic astrology service exceptions."""
     assert isinstance(exc, AstrologyServiceException)
+    sentry_sdk.capture_exception(exc)
     return PlainTextResponse(
         content=json.dumps({"error": exc.code, "message": exc.message}),
         status_code=exc.status_code,
@@ -56,6 +59,7 @@ async def handle_generic_exception(
     exc: Exception
 ) -> PlainTextResponse:
     """Handle unexpected exceptions."""
+    sentry_sdk.capture_exception(exc)
     return PlainTextResponse(
         content=json.dumps({
             "error": "INTERNAL_SERVER_ERROR",

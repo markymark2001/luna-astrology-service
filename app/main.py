@@ -6,8 +6,13 @@ Public repository: https://github.com/markymark2001/luna-astrology-service
 The service is automatically synced from the private Luna repository.
 """
 
+import logging
+
+import sentry_sdk
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 from app.api.v1 import api_router
 from app.application.compatibility_service import SynastryService
@@ -28,6 +33,24 @@ from app.core.exceptions import (
     InvalidBirthDataException,
 )
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
+
+# Initialize Sentry for error tracking (production only)
+if settings.env == "prod" and settings.sentry_dsn:
+    sentry_sdk.init(
+        dsn=settings.sentry_dsn,
+        environment=f"{settings.env}-astrology",
+        traces_sample_rate=0.2,
+        send_default_pii=False,
+        integrations=[
+            FastApiIntegration(
+                failed_request_status_codes={*range(500, 599)},
+            ),
+            LoggingIntegration(
+                level=logging.INFO,
+                event_level=logging.ERROR,
+            ),
+        ],
+    )
 
 # Create FastAPI application
 app = FastAPI(
