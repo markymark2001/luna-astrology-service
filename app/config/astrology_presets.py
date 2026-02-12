@@ -79,13 +79,14 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             ],
             points=["ascendant", "medium_coeli"],
             houses=[
-                "first_house", "fourth_house", "fifth_house",
-                "seventh_house", "tenth_house", "eleventh_house"
+                "first_house", "second_house", "third_house", "fourth_house",
+                "fifth_house", "sixth_house", "seventh_house", "eighth_house",
+                "ninth_house", "tenth_house", "eleventh_house", "twelfth_house"
             ],
             natal_orb=4.0,
             transit_orb=4.0,
             synastry_orb=8.0,
-            description="Core configuration: 10 planets, 2 points, 6 key houses, balanced orbs (LLM-optimized)"
+            description="Core configuration: 10 planets, 2 points, 12 houses, balanced orbs (LLM-optimized)"
         )
 
     elif level == DetailLevel.ESSENTIAL:

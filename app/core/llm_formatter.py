@@ -169,6 +169,64 @@ def format_aspect(aspect: dict[str, Any], prefix1: str = "", prefix2: str = "") 
     return f"{prefix1}{p1} {aspect_type} {prefix2}{p2} (orb {abs(orbit):.1f})"
 
 
+def _find_natal_house(abs_pos: float, natal_houses: dict[str, Any]) -> int | None:
+    """Find which natal house a planet falls in based on ecliptic position.
+
+    Args:
+        abs_pos: Absolute ecliptic position (0-360 degrees)
+        natal_houses: Natal houses dict with house_name -> {abs_pos, ...}
+
+    Returns:
+        House number (1-12) or None if houses lack abs_pos data
+    """
+    cusps: list[tuple[int, float]] = []
+    for house_name, house_data in natal_houses.items():
+        if not isinstance(house_data, dict):
+            continue
+        house_num = HOUSE_NAME_TO_NUM.get(house_name.lower().replace(" ", "_"))
+        house_pos = house_data.get("abs_pos")
+        if house_num is not None and house_pos is not None:
+            cusps.append((house_num, float(house_pos)))
+    if not cusps:
+        return None
+    cusps.sort(key=lambda c: c[1])
+    for i in range(len(cusps)):
+        current_num, current_pos = cusps[i]
+        next_pos = cusps[(i + 1) % len(cusps)][1]
+        if next_pos <= current_pos:
+            # Wrap-around: next cusp is past 360
+            if abs_pos >= current_pos or abs_pos < next_pos:
+                return current_num
+        else:
+            if current_pos <= abs_pos < next_pos:
+                return current_num
+    return cusps[-1][0]
+
+
+def _format_transit_planet(planet_data: dict[str, Any], natal_houses: dict[str, Any]) -> str:
+    """Format a transit planet with corrected natal house placement.
+
+    If abs_pos and natal houses are available, computes the correct natal house.
+    Otherwise strips the house entirely (better none than wrong).
+
+    Args:
+        planet_data: Transit planet data dict
+        natal_houses: Natal chart houses dict
+
+    Returns:
+        Formatted planet string with corrected house
+    """
+    abs_pos = planet_data.get("abs_pos")
+    if abs_pos is not None and natal_houses:
+        natal_house = _find_natal_house(float(abs_pos), natal_houses)
+        if natal_house is not None:
+            corrected = {**planet_data, "house": natal_house}
+            return format_planet(corrected)
+    # Strip house entirely — better no house than wrong house
+    stripped = {**planet_data, "house": None}
+    return format_planet(stripped)
+
+
 def format_natal_chart(chart_data: dict[str, Any]) -> str:
     """Format a complete natal chart as LLM-optimized text.
 
@@ -221,14 +279,15 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(format_aspect(aspect))
             lines.append("")
 
-    # Format current transits (if included in profile)
+    # Format current transits with corrected natal house placement
     transits = chart_data.get("transits", {})
     transit_planets = transits.get("planets", {})
+    natal_houses = natal_chart.get("houses", {})
     if transit_planets:
         lines.append("CURRENT TRANSITS")
         for planet_key, planet_data in transit_planets.items():
             if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(format_planet(planet_data))
+                lines.append(_format_transit_planet(planet_data, natal_houses))
         lines.append("")
 
     # Format transit-to-natal aspects (don't filter generational - transiting Pluto to natal Neptune IS personal)
@@ -312,60 +371,6 @@ def format_personal_profile(chart_data: dict[str, Any]) -> str:
             for aspect in filtered:
                 lines.append(format_aspect(aspect, prefix1="Transit ", prefix2="natal "))
             lines.append("")
-
-    return "\n".join(lines).strip()
-
-
-def format_transit_period(transit_data: dict[str, Any]) -> str:
-    """Format transit period data as LLM-optimized text (legacy snapshot format).
-
-    Args:
-        transit_data: Transit period data with period info, natal chart, snapshots
-
-    Returns:
-        Multi-line formatted text block
-    """
-    lines = []
-
-    # Period header
-    period = transit_data.get("period", {})
-    start = period.get("start", "")
-    end = period.get("end", "")
-    granularity = transit_data.get("granularity", "")
-    lines.append(f"PERIOD: {start} to {end} ({granularity})")
-    lines.append("")
-
-    # Natal chart summary (compact)
-    natal = transit_data.get("natal_chart", {})
-    natal_planets = natal.get("planets", {})
-    if natal_planets:
-        lines.append("NATAL POSITIONS")
-        for planet_key, planet_data in natal_planets.items():
-            if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(format_planet(planet_data))
-        lines.append("")
-
-    # Snapshots
-    snapshots = transit_data.get("snapshots", [])
-    for snapshot in snapshots:
-        date = snapshot.get("date", "")
-        lines.append(f"{date}:")
-
-        # Transit positions
-        transits = snapshot.get("transits", {})
-        transit_planets = transits.get("planets", {})
-        for planet_key, planet_data in transit_planets.items():
-            if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(f"  {format_planet(planet_data)}")
-
-        # Transit-to-natal aspects
-        aspects = snapshot.get("aspects", {})
-        transit_aspects = aspects.get("transits_to_natal", [])
-        if transit_aspects:
-            for aspect in transit_aspects:
-                lines.append(f"  {format_aspect(aspect, prefix1='', prefix2='natal ')}")
-
-        lines.append("")
 
     return "\n".join(lines).strip()
 
