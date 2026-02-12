@@ -227,19 +227,21 @@ def _format_transit_planet(planet_data: dict[str, Any], natal_houses: dict[str, 
     return format_planet(stripped)
 
 
-def format_natal_chart(chart_data: dict[str, Any]) -> str:
-    """Format a complete natal chart as LLM-optimized text.
+def _format_natal_sections(chart_data: dict[str, Any]) -> list[str]:
+    """Format the common natal chart sections: planets, points, houses, natal aspects.
+
+    Shared by format_natal_chart, format_personal_profile, and format_monthly_profile.
 
     Args:
-        chart_data: Natal chart data with planets, houses, points, aspects
+        chart_data: Chart data with natal_chart and aspects keys
 
     Returns:
-        Multi-line formatted text block
+        List of formatted lines (with trailing blank lines per section)
     """
     lines = []
-
-    # Format planets
     natal_chart = chart_data.get("natal_chart", {})
+
+    # Planets
     planets = natal_chart.get("planets", {})
     if planets:
         lines.append("PLANETS")
@@ -248,7 +250,7 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(format_planet(planet_data))
         lines.append("")
 
-    # Format points (Ascendant, MC, etc.)
+    # Points (Ascendant, MC, etc.)
     points = natal_chart.get("points", {})
     if points:
         lines.append("POINTS")
@@ -257,7 +259,7 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(format_planet(point_data))
         lines.append("")
 
-    # Format houses
+    # Houses
     houses = natal_chart.get("houses", {})
     if houses:
         lines.append("HOUSES")
@@ -268,7 +270,7 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(f"{name}: {sign}")
         lines.append("")
 
-    # Format natal aspects
+    # Natal aspects
     aspects = chart_data.get("aspects", {})
     natal_aspects = aspects.get("natal", [])
     if natal_aspects:
@@ -279,10 +281,50 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(format_aspect(aspect))
             lines.append("")
 
-    # Format current transits with corrected natal house placement
+    return lines
+
+
+def _format_transit_to_natal_aspects(chart_data: dict[str, Any]) -> list[str]:
+    """Format transit-to-natal aspects section.
+
+    Shared by format_natal_chart and format_personal_profile.
+
+    Args:
+        chart_data: Chart data with aspects.transits_to_natal key
+
+    Returns:
+        List of formatted lines
+    """
+    lines = []
+    aspects = chart_data.get("aspects", {})
+    transit_aspects = aspects.get("transits_to_natal", [])
+    if transit_aspects:
+        # Don't filter generational - transiting Pluto to natal Neptune IS personal
+        filtered = filter_aspects(transit_aspects, filter_generational=False)
+        if filtered:
+            lines.append("TRANSIT ASPECTS TO NATAL")
+            for aspect in filtered:
+                lines.append(format_aspect(aspect, prefix1="Transit ", prefix2="natal "))
+            lines.append("")
+    return lines
+
+
+def format_natal_chart(chart_data: dict[str, Any]) -> str:
+    """Format a complete natal chart as LLM-optimized text.
+
+    Args:
+        chart_data: Natal chart data with planets, houses, points, aspects
+
+    Returns:
+        Multi-line formatted text block
+    """
+    lines = _format_natal_sections(chart_data)
+
+    # Current transits with corrected natal house placement
+    natal_chart = chart_data.get("natal_chart", {})
+    natal_houses = natal_chart.get("houses", {})
     transits = chart_data.get("transits", {})
     transit_planets = transits.get("planets", {})
-    natal_houses = natal_chart.get("houses", {})
     if transit_planets:
         lines.append("CURRENT TRANSITS")
         for planet_key, planet_data in transit_planets.items():
@@ -290,15 +332,7 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
                 lines.append(_format_transit_planet(planet_data, natal_houses))
         lines.append("")
 
-    # Format transit-to-natal aspects (don't filter generational - transiting Pluto to natal Neptune IS personal)
-    transit_aspects = aspects.get("transits_to_natal", [])
-    if transit_aspects:
-        filtered = filter_aspects(transit_aspects, filter_generational=False)
-        if filtered:
-            lines.append("TRANSIT ASPECTS TO NATAL")
-            for aspect in filtered:
-                lines.append(format_aspect(aspect, prefix1="Transit ", prefix2="natal "))
-            lines.append("")
+    lines.extend(_format_transit_to_natal_aspects(chart_data))
 
     return "\n".join(lines).strip()
 
@@ -317,61 +351,8 @@ def format_personal_profile(chart_data: dict[str, Any]) -> str:
     Returns:
         Multi-line formatted text block (excludes CURRENT TRANSITS section)
     """
-    lines = []
-
-    # Format planets
-    natal_chart = chart_data.get("natal_chart", {})
-    planets = natal_chart.get("planets", {})
-    if planets:
-        lines.append("PLANETS")
-        for planet_key, planet_data in planets.items():
-            if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(format_planet(planet_data))
-        lines.append("")
-
-    # Format points (Ascendant, MC, etc.)
-    points = natal_chart.get("points", {})
-    if points:
-        lines.append("POINTS")
-        for point_key, point_data in points.items():
-            if isinstance(point_data, dict) and "name" in point_data:
-                lines.append(format_planet(point_data))
-        lines.append("")
-
-    # Format houses
-    houses = natal_chart.get("houses", {})
-    if houses:
-        lines.append("HOUSES")
-        for house_key, house_data in houses.items():
-            if isinstance(house_data, dict):
-                name = house_data.get("name", house_key)
-                sign = house_data.get("sign", "Unknown")
-                lines.append(f"{name}: {sign}")
-        lines.append("")
-
-    # Format natal aspects
-    aspects = chart_data.get("aspects", {})
-    natal_aspects = aspects.get("natal", [])
-    if natal_aspects:
-        filtered = filter_aspects(natal_aspects)
-        if filtered:
-            lines.append("NATAL ASPECTS")
-            for aspect in filtered:
-                lines.append(format_aspect(aspect))
-            lines.append("")
-
-    # SKIP CURRENT TRANSITS - same for everyone, not person-specific
-
-    # Format transit-to-natal aspects (person-specific - how today affects THIS chart)
-    transit_aspects = aspects.get("transits_to_natal", [])
-    if transit_aspects:
-        filtered = filter_aspects(transit_aspects, filter_generational=False)
-        if filtered:
-            lines.append("TRANSIT ASPECTS TO NATAL")
-            for aspect in filtered:
-                lines.append(format_aspect(aspect, prefix1="Transit ", prefix2="natal "))
-            lines.append("")
-
+    lines = _format_natal_sections(chart_data)
+    lines.extend(_format_transit_to_natal_aspects(chart_data))
     return "\n".join(lines).strip()
 
 
@@ -529,51 +510,9 @@ def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, A
     Returns:
         Multi-line formatted text with natal chart + monthly transits
     """
-    lines = []
+    lines = _format_natal_sections(chart_data)
 
-    # Format natal planets
-    natal_chart = chart_data.get("natal_chart", {})
-    planets = natal_chart.get("planets", {})
-    if planets:
-        lines.append("PLANETS")
-        for planet_key, planet_data in planets.items():
-            if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(format_planet(planet_data))
-        lines.append("")
-
-    # Format points (Ascendant, MC, etc.)
-    points = natal_chart.get("points", {})
-    if points:
-        lines.append("POINTS")
-        for point_key, point_data in points.items():
-            if isinstance(point_data, dict) and "name" in point_data:
-                lines.append(format_planet(point_data))
-        lines.append("")
-
-    # Format houses
-    houses = natal_chart.get("houses", {})
-    if houses:
-        lines.append("HOUSES")
-        for house_key, house_data in houses.items():
-            if isinstance(house_data, dict):
-                name = house_data.get("name", house_key)
-                sign = house_data.get("sign", "Unknown")
-                lines.append(f"{name}: {sign}")
-        lines.append("")
-
-    # Format natal aspects
-    aspects = chart_data.get("aspects", {})
-    natal_aspects = aspects.get("natal", [])
-    if natal_aspects:
-        filtered = filter_aspects(natal_aspects)
-        if filtered:
-            lines.append("NATAL ASPECTS")
-            for aspect in filtered:
-                lines.append(format_aspect(aspect))
-            lines.append("")
-
-    # Format monthly transits (from transit_period_service)
-    # Uses the same format as format_transit_periods
+    # Monthly transits (from transit_period_service)
     period = transit_data.get("period", {})
     start = period.get("start", "")
     end = period.get("end", "")
