@@ -1,8 +1,9 @@
 """Soulmate chart application service - derives ideal partner chart from user's birth data."""
 
 import math
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from kerykeion import RelationshipScoreFactory
 
@@ -74,6 +75,16 @@ MOON_AFFINITIES: dict[str, list[str]] = {
 # - Venus-Mars: 4 pts each way
 # North Node bonus: up to 8 points (Sun: 4, Moon: 4, Venus: 3, capped at 8)
 MAX_COMPATIBILITY_SCORE = 56
+
+
+def _resolve_current_year(timezone: str | None = None) -> int:
+    """Resolve current year in requested timezone (fallback UTC)."""
+    if timezone:
+        try:
+            return datetime.now(ZoneInfo(timezone)).year
+        except (ZoneInfoNotFoundError, ValueError):
+            pass
+    return datetime.now(UTC).year
 
 
 def calculate_age_range(
@@ -284,7 +295,7 @@ def recalculate_soulmate_birth_year(
     Returns:
         Tuple of (birth_year, min_age, max_age)
     """
-    current_year = datetime.now().year
+    current_year = _resolve_current_year()
     user_age = current_year - user_birth_year
 
     min_age, max_age = calculate_age_range(
@@ -532,7 +543,7 @@ class SoulmateService:
             Tuple of (BirthData, NatalChart, score) for highest scoring candidate
         """
         # Calculate age range based on gender combination
-        current_year = datetime.now().year
+        current_year = _resolve_current_year(user_birth_data.timezone)
         user_age = current_year - user_birth_data.year
         min_soulmate_age, max_soulmate_age = calculate_age_range(
             user_age=user_age,

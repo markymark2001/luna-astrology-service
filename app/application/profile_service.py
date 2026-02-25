@@ -2,6 +2,7 @@
 
 from calendar import monthrange
 from datetime import UTC, date, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.core.llm_formatter import format_monthly_profile, format_natal_chart, format_personal_profile
 from app.domain.models import BirthData
@@ -24,6 +25,19 @@ class ProfileService:
         """
         self.provider = provider
 
+    @staticmethod
+    def _resolve_now_for_birth_timezone(birth_data: BirthData) -> datetime:
+        """
+        Resolve current datetime using the subject's timezone.
+
+        Falls back to UTC for invalid timezone strings.
+        """
+        timezone_name = birth_data.timezone or "UTC"
+        try:
+            return datetime.now(ZoneInfo(timezone_name))
+        except (ZoneInfoNotFoundError, ValueError):
+            return datetime.now(UTC)
+
     def generate_profile(self, birth_data: BirthData, transit_date: datetime | None = None) -> dict:
         """
         Generate complete astrological profile (natal chart + transits).
@@ -40,7 +54,7 @@ class ProfileService:
 
         # Calculate transits (default to now if not specified)
         if transit_date is None:
-            transit_date = datetime.now(UTC)
+            transit_date = self._resolve_now_for_birth_timezone(birth_data)
 
         transits = self.provider.calculate_transits(natal_chart, transit_date)
 
@@ -128,7 +142,7 @@ class ProfileService:
         }
 
         # Calculate current month date range
-        today = date.today()
+        today = self._resolve_now_for_birth_timezone(birth_data).date()
         first_day = date(today.year, today.month, 1)
         last_day = date(today.year, today.month, monthrange(today.year, today.month)[1])
 
