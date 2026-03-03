@@ -15,6 +15,7 @@ from kerykeion.schemas.kr_models import AstrologicalSubjectModel
 from app.config.astrology_presets import AstrologyConfig
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.core.extractors import extract_celestial_objects, filter_aspects_by_orb, filter_personal_synastry_aspects
+from app.core.temporal import normalize_transit_for_chart_timezone
 from app.domain.models import (
     BirthData,
     NatalChart,
@@ -225,13 +226,17 @@ class KerykeionProvider(IAstrologyProvider):
         try:
             # Create transit subject for the given date
             birth_data = natal_chart.birth_data
+            transit_local = normalize_transit_for_chart_timezone(
+                transit_date=transit_date,
+                chart_timezone=birth_data.timezone,
+            )
             transit_subject = AstrologicalSubjectFactory.from_birth_data(
                 name="Transit",
-                year=transit_date.year,
-                month=transit_date.month,
-                day=transit_date.day,
-                hour=transit_date.hour,
-                minute=transit_date.minute,
+                year=transit_local.year,
+                month=transit_local.month,
+                day=transit_local.day,
+                hour=transit_local.hour,
+                minute=transit_local.minute,
                 lng=birth_data.longitude,
                 lat=birth_data.latitude,
                 tz_str=birth_data.timezone,
@@ -255,7 +260,7 @@ class KerykeionProvider(IAstrologyProvider):
 
             # Build domain model
             transit = Transit(
-                date=transit_date,
+                date=transit_local,
                 planets=transit_planets,
                 aspects_to_natal=transit_to_natal_aspects,
                 current_sky_aspects=current_sky_aspects
