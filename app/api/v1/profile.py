@@ -5,6 +5,7 @@ from fastapi.responses import PlainTextResponse
 
 from app.application.profile_service import ProfileService
 from app.models.requests import ProfileRequest
+from app.models.responses import PlacementsResponse
 
 router = APIRouter(prefix="/astrology", tags=["Astrology Profile"])
 
@@ -139,3 +140,37 @@ async def get_monthly_profile(
         HTTPException: Handled by FastAPI exception handlers
     """
     return profile_service.generate_monthly_profile_compact(birth_data=request)
+
+
+# Called by: backend/app/api/v1/profile.py
+@router.post(
+    "/profile/placements",
+    status_code=status.HTTP_200_OK,
+    response_model=PlacementsResponse,
+    summary="Get natal chart placements for profile display",
+    description="Calculate natal chart and return placements (sun, moon, ascendant, all 10 planets) for profile UI."
+)
+async def get_placements(
+    request: ProfileRequest,
+    profile_service: ProfileService = Depends(get_profile_service)
+) -> PlacementsResponse:
+    """
+    Get natal chart placements for profile page display.
+
+    Returns structured data for displaying:
+    - Sun sign
+    - Moon sign
+    - Ascendant (Rising) sign
+    - All 10 planets with their signs and houses
+
+    Args:
+        request: Birth data
+        profile_service: Injected profile service
+
+    Returns:
+        PlacementsResponse with all placement data
+
+    Raises:
+        HTTPException: Handled by FastAPI exception handlers
+    """
+    return profile_service.generate_placements(birth_data=request)
