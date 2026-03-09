@@ -75,6 +75,8 @@ MOON_AFFINITIES: dict[str, list[str]] = {
 # - Venus-Mars: 4 pts each way
 # North Node bonus: up to 8 points (Sun: 4, Moon: 4, Venus: 3, capped at 8)
 MAX_COMPATIBILITY_SCORE = 56
+MIN_SUPPORTED_BIRTH_YEAR = 1900
+MAX_SUPPORTED_BIRTH_YEAR = 2100
 
 
 def _resolve_current_year(timezone: str | None = None) -> int:
@@ -554,6 +556,13 @@ class SoulmateService:
         # Convert to birth years (younger soulmate = higher birth year)
         max_birth_year = current_year - min_soulmate_age
         min_birth_year = current_year - max_soulmate_age
+
+        # Clamp to BirthData's supported year range to avoid validation errors
+        min_birth_year = max(MIN_SUPPORTED_BIRTH_YEAR, min_birth_year)
+        max_birth_year = min(MAX_SUPPORTED_BIRTH_YEAR, max_birth_year)
+
+        if min_birth_year > max_birth_year:
+            min_birth_year = max_birth_year
 
         # Extract user positions for pre-filtering
         user_sun_pos = user_chart.planets.get("sun", {}).get("abs_pos", 0.0)

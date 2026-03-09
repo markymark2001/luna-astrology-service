@@ -553,6 +553,27 @@ class TestSoulmateBirthYear:
 
         assert soulmate_age >= 18, f"Soulmate age {soulmate_age} is under 18"
 
+
+    def test_oldest_supported_user_does_not_fail(self):
+        """Users born at lower BirthData bound should still get a valid soulmate year."""
+        oldest_user_birth_data = {
+            "year": 1900,
+            "month": 6,
+            "day": 15,
+            "hour": 14,
+            "minute": 30,
+            "latitude": 51.5,
+            "longitude": -0.1,
+            "timezone": "Europe/London",
+            "gender": "female",
+            "soulmate_sex": "male",
+        }
+
+        response = client.post("/api/v1/astrology/soulmate/chart", json=oldest_user_birth_data)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert 1900 <= data["soulmate_birth_year"] <= 2100
     def test_soulmate_age_for_older_user(self):
         """Soulmate age range should be correct for older users."""
         from datetime import datetime
