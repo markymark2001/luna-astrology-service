@@ -2,7 +2,8 @@
 
 from datetime import date
 
-from app.core.llm_formatter import filter_aspects, format_transit_periods, simplify_planets
+from app.application.chart_payloads import llm_natal_chart_payload
+from app.core.llm_formatter import format_transit_periods
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 
@@ -60,9 +61,6 @@ class TransitPeriodService:
             end_date=end_dt
         )
 
-        # Build response with natal chart data
-        natal_planets = {k: v for k, v in natal_chart.planets.items() if k != "birth_data"}
-
         # Convert TransitAspect objects to dicts for formatting
         aspects_data = [
             {
@@ -79,18 +77,13 @@ class TransitPeriodService:
         ]
 
         return {
+            "chart_system": natal_chart.chart_system,
             "period": {
                 "start": start_date,
                 "end": end_date,
                 "days": days_diff
             },
-            "natal_chart": {
-                "birth_data": natal_chart.planets.get("birth_data"),
-                "planets": simplify_planets(natal_planets),
-                "houses": natal_chart.houses,
-                "points": simplify_planets(natal_chart.points),
-                "aspects": filter_aspects(natal_chart.aspects)
-            },
+            "natal_chart": llm_natal_chart_payload(natal_chart),
             "transit_aspects": aspects_data,
             "aspect_count": len(aspects_data)
         }

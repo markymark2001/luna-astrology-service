@@ -49,6 +49,7 @@ class SynastryService:
 
         # Return synastry data with relationship score
         return {
+            "chart_system": chart1.chart_system,
             "synastry": {
                 "aspects": synastry.aspects
             },

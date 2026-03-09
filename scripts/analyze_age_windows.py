@@ -9,6 +9,7 @@ from app.application.soulmate_service import (
     calculate_aspect_score,
 )
 from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
@@ -194,7 +195,7 @@ def analyze_user_by_age_window(user: UserProfile, provider: KerykeionProvider):
 
 def main():
     config = get_preset(DetailLevel.CORE)
-    provider = KerykeionProvider(config)
+    provider = KerykeionProvider(config, chart_system=DEFAULT_CHART_SYSTEM)
 
     print("=" * 100)
     print("AGE WINDOW ANALYSIS: How many 95%+/90%+/85%+/80%+ matches exist at different age windows?")

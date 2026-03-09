@@ -15,6 +15,15 @@ class FakeProvider:
 
     def calculate_natal_chart(self, birth_data):
         return SimpleNamespace(
+            chart_system={
+                "id": "western_tropical_whole_sign",
+                "zodiac_type": "Tropical",
+                "house_system": "Whole Sign",
+                "house_system_identifier": "W",
+                "perspective_type": "Apparent Geocentric",
+                "provider": "kerykeion",
+                "sidereal_mode": None,
+            },
             planets={"birth_data": {"timezone": birth_data.timezone}, "sun": {}},
             houses={},
             points={},
@@ -89,3 +98,12 @@ def test_generate_monthly_profile_uses_birth_timezone_month(monkeypatch):
     assert result == "formatted-monthly-profile"
     assert provider.last_start_date == date(2026, 2, 1)
     assert provider.last_end_date == date(2026, 2, 28)
+
+
+def test_generate_profile_includes_chart_system_metadata():
+    provider = FakeProvider()
+    service = ProfileService(provider=provider)
+
+    result = service.generate_profile(_birth_data("America/New_York"))
+
+    assert result["chart_system"]["id"] == "western_tropical_whole_sign"

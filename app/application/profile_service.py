@@ -4,6 +4,7 @@ from calendar import monthrange
 from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
+from app.application.chart_payloads import natal_chart_payload
 from app.core.llm_formatter import format_monthly_profile, format_natal_chart, format_personal_profile
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
@@ -61,12 +62,8 @@ class ProfileService:
 
         # Build response
         return {
-            "natal_chart": {
-                "birth_data": natal_chart.planets.get("birth_data"),
-                "planets": {k: v for k, v in natal_chart.planets.items() if k != "birth_data"},
-                "houses": natal_chart.houses,
-                "points": natal_chart.points
-            },
+            "chart_system": natal_chart.chart_system,
+            "natal_chart": natal_chart_payload(natal_chart),
             "aspects": {
                 "natal": natal_chart.aspects,
                 "transits_to_natal": transits.aspects_to_natal,
@@ -131,12 +128,8 @@ class ProfileService:
 
         # Build natal chart data structure
         chart_data = {
-            "natal_chart": {
-                "birth_data": natal_chart.planets.get("birth_data"),
-                "planets": {k: v for k, v in natal_chart.planets.items() if k != "birth_data"},
-                "houses": natal_chart.houses,
-                "points": natal_chart.points
-            },
+            "chart_system": natal_chart.chart_system,
+            "natal_chart": natal_chart_payload(natal_chart),
             "aspects": {
                 "natal": natal_chart.aspects,
             }
@@ -156,6 +149,7 @@ class ProfileService:
 
         # Build transit data structure
         transit_data = {
+            "chart_system": natal_chart.chart_system,
             "period": {
                 "start": first_day.isoformat(),
                 "end": last_day.isoformat(),
@@ -264,5 +258,6 @@ class ProfileService:
             sun=sun,
             moon=moon,
             ascendant=ascendant,
-            planets=planets
+            planets=planets,
+            chart_system=natal_chart.chart_system,
         )

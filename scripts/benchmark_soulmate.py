@@ -16,6 +16,7 @@ sys.path.insert(0, ".")
 
 from app.application.soulmate_service import SoulmateService
 from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
@@ -106,7 +107,7 @@ def main():
     compare_mode = "--compare" in sys.argv
 
     print("Initializing provider...")
-    provider = KerykeionProvider(get_preset(DetailLevel.CORE))
+    provider = KerykeionProvider(get_preset(DetailLevel.CORE), chart_system=DEFAULT_CHART_SYSTEM)
     service = SoulmateService(provider)
 
     if compare_mode:

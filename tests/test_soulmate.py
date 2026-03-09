@@ -8,6 +8,7 @@ Run tests:
 
 from fastapi.testclient import TestClient
 
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.main import app
 
 client = TestClient(app)
@@ -142,6 +143,13 @@ class TestSoulmateResponseStructure:
         data = response.json()
         assert "aspects" in data
         assert isinstance(data["aspects"], list)
+
+    def test_response_has_chart_system_metadata(self):
+        """Response includes the canonical chart-system metadata."""
+        response = client.post("/api/v1/astrology/soulmate/chart", json=VALID_BIRTH_DATA)
+        data = response.json()
+        assert data["chart_system"]["id"] == "western_tropical_whole_sign"
+        assert data["chart_system"]["house_system_identifier"] == "W"
 
     def test_planet_has_required_fields(self):
         """Each planet should have name, sign, position, house, retrograde."""
@@ -355,7 +363,7 @@ class TestVenusMarsElementCompatibility:
 
         # Setup
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
         service = SoulmateService(provider=provider)
 
         user_birth_data = BirthData(
@@ -393,7 +401,7 @@ class TestVenusMarsElementCompatibility:
 
         # Setup
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
         service = SoulmateService(provider=provider)
 
         user_birth_data = BirthData(
@@ -432,7 +440,7 @@ class TestVenusMarsElementCompatibility:
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
         service = SoulmateService(provider=provider)
 
         test_cases = [

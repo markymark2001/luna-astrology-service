@@ -29,6 +29,7 @@ from app.application.soulmate_service import (
     score_to_compatibility_percent,
 )
 from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
@@ -101,7 +102,7 @@ def _create_birth_data(user: UserProfile) -> BirthData:
 def _get_provider_and_service() -> tuple[KerykeionProvider, SoulmateService]:
     """Create provider and service instances."""
     config = get_preset(DetailLevel.CORE)
-    provider = KerykeionProvider(config)
+    provider = KerykeionProvider(config, chart_system=DEFAULT_CHART_SYSTEM)
     service = SoulmateService(provider=provider)
     return provider, service
 

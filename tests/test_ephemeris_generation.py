@@ -17,11 +17,12 @@ class TestEphemerisGeneration:
     def test_generate_ephemeris_for_range_returns_list(self):
         """Should return list of AstrologicalSubject objects."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -41,11 +42,12 @@ class TestEphemerisGeneration:
     def test_generate_ephemeris_for_range_leap_year(self):
         """Should handle leap year correctly (366 days)."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -66,11 +68,12 @@ class TestEphemerisGeneration:
     def test_ephemeris_points_have_sun_sign(self):
         """Each ephemeris point should have sun.sign attribute."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -91,11 +94,12 @@ class TestEphemerisGeneration:
     def test_ephemeris_points_have_moon_sign(self):
         """Each ephemeris point should have moon.sign attribute."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -116,11 +120,12 @@ class TestEphemerisGeneration:
     def test_ephemeris_points_have_venus_sign(self):
         """Each ephemeris point should have venus.sign attribute."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -141,11 +146,12 @@ class TestEphemerisGeneration:
     def test_ephemeris_points_have_mars_sign(self):
         """Each ephemeris point should have mars.sign attribute."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -166,11 +172,12 @@ class TestEphemerisGeneration:
     def test_ephemeris_points_have_north_node(self):
         """Each ephemeris point should have true_north_lunar_node (True Node)."""
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,
@@ -195,11 +202,12 @@ class TestEphemerisGeneration:
         import time
 
         from app.config.astrology_presets import DetailLevel, get_preset
+        from app.config.chart_system import DEFAULT_CHART_SYSTEM
         from app.domain.models import BirthData
         from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
         config = get_preset(DetailLevel.CORE)
-        provider = KerykeionProvider(config=config)
+        provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 
         location = BirthData(
             year=1990, month=1, day=1, hour=12, minute=0,

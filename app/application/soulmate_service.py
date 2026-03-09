@@ -908,4 +908,5 @@ class SoulmateService:
             user_mars_sign=user_mars_sign,
             user_rising_sign=user_rising_sign,
             soulmate_birth_year=soulmate_birth_year,
+            chart_system=soulmate_chart.chart_system,
         )

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.application.profile_service import ProfileService
 from app.domain.models.birth_data import BirthData
+from app.models.responses import ChartSystemResponse
 
 router = APIRouter(prefix="/astrology", tags=["Style"])
 
@@ -40,6 +41,10 @@ class StyleChartResponse(BaseModel):
     points: dict[str, Any] = Field(
         ...,
         description="Chart points: {ascendant: {name, sign, position}, ...}",
+    )
+    chart_system: ChartSystemResponse = Field(
+        ...,
+        description="Chart-system metadata",
     )
 
 
@@ -90,4 +95,5 @@ async def get_style_chart(
     return StyleChartResponse(
         planets=planets,
         points=points,
+        chart_system=profile_data["chart_system"],
     )

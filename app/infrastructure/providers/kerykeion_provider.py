@@ -5,14 +5,13 @@ from datetime import UTC, date, datetime, time
 
 from kerykeion import (
     AspectsFactory,
-    AstrologicalSubjectFactory,
-    EphemerisDataFactory,
     RelationshipScoreFactory,
     TransitsTimeRangeFactory,
 )
 from kerykeion.schemas.kr_models import AstrologicalSubjectModel
 
 from app.config.astrology_presets import AstrologyConfig
+from app.config.chart_system import ChartSystemConfig
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.core.extractors import extract_celestial_objects, filter_aspects_by_orb, filter_personal_synastry_aspects
 from app.core.temporal import normalize_transit_for_chart_timezone
@@ -26,6 +25,7 @@ from app.domain.models import (
     TransitPeriodResult,
 )
 from app.domain.ports import IAstrologyProvider
+from app.infrastructure.providers.kerykeion_chart_factory import KerykeionChartFactory
 
 # Planets to track for transit periods (skip Moon - too fast, creates noise)
 TRANSIT_PLANETS = ['Sun', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto']
@@ -73,7 +73,7 @@ class KerykeionProvider(IAstrologyProvider):
     substitution with other astrology libraries (Swiss Ephemeris, AstroAPI, etc.)
     """
 
-    def __init__(self, config: AstrologyConfig):
+    def __init__(self, config: AstrologyConfig, chart_system: ChartSystemConfig):
         """
         Initialize the Kerykeion provider with configuration.
 
@@ -81,6 +81,7 @@ class KerykeionProvider(IAstrologyProvider):
             config: Astrology configuration (planets, houses, orbs, etc.)
         """
         self.config = config
+        self.chart_factory = KerykeionChartFactory(chart_system=chart_system)
 
     def calculate_natal_chart(self, birth_data: BirthData) -> NatalChart:
         """
@@ -98,18 +99,7 @@ class KerykeionProvider(IAstrologyProvider):
         """
         try:
             # Create Kerykeion astrological subject
-            subject = AstrologicalSubjectFactory.from_birth_data(
-                name="Subject",
-                year=birth_data.year,
-                month=birth_data.month,
-                day=birth_data.day,
-                hour=birth_data.hour,
-                minute=birth_data.minute,
-                lng=birth_data.longitude,
-                lat=birth_data.latitude,
-                tz_str=birth_data.timezone,
-                online=False
-            )
+            subject = self.chart_factory.create_subject(name="Subject", birth_data=birth_data)
 
             # Calculate aspects
             aspects_result = AspectsFactory.single_chart_aspects(subject)
@@ -137,6 +127,7 @@ class KerykeionProvider(IAstrologyProvider):
             # Build domain model
             natal_chart = NatalChart(
                 birth_data=birth_data,
+                chart_system=self.chart_factory.metadata(),
                 planets={**planets, **points, "birth_data": birth_metadata},
                 houses=houses,
                 points=points,
@@ -230,17 +221,18 @@ class KerykeionProvider(IAstrologyProvider):
                 transit_date=transit_date,
                 chart_timezone=birth_data.timezone,
             )
-            transit_subject = AstrologicalSubjectFactory.from_birth_data(
+            transit_subject = self.chart_factory.create_subject(
                 name="Transit",
-                year=transit_local.year,
-                month=transit_local.month,
-                day=transit_local.day,
-                hour=transit_local.hour,
-                minute=transit_local.minute,
-                lng=birth_data.longitude,
-                lat=birth_data.latitude,
-                tz_str=birth_data.timezone,
-                online=False
+                birth_data=BirthData(
+                    year=transit_local.year,
+                    month=transit_local.month,
+                    day=transit_local.day,
+                    hour=transit_local.hour,
+                    minute=transit_local.minute,
+                    latitude=birth_data.latitude,
+                    longitude=birth_data.longitude,
+                    timezone=birth_data.timezone,
+                ),
             )
 
             # Extract transit planets
@@ -313,15 +305,12 @@ class KerykeionProvider(IAstrologyProvider):
                 step_days = 30  # Monthly for 5+ years
 
             # Generate ephemeris data
-            ephemeris = EphemerisDataFactory(
+            ephemeris = self.chart_factory.create_ephemeris(
                 start_datetime=start_dt,
                 end_datetime=end_dt,
-                lng=birth_data.longitude,
-                lat=birth_data.latitude,
-                tz_str=birth_data.timezone,
-                step_type='days',
-                step=step_days,
-                max_days=15000  # Allow up to ~40 years
+                location=birth_data,
+                step_days=step_days,
+                max_days=15000,
             )
 
             ephemeris_points = ephemeris.get_ephemeris_data_as_astrological_subjects()
@@ -491,14 +480,11 @@ class KerykeionProvider(IAstrologyProvider):
             end_dt = datetime.combine(end_date, time(12, 0))
 
             # Use EphemerisDataFactory for fast bulk calculation
-            ephemeris = EphemerisDataFactory(
+            ephemeris = self.chart_factory.create_ephemeris(
                 start_datetime=start_dt,
                 end_datetime=end_dt,
-                lng=location.longitude,
-                lat=location.latitude,
-                tz_str=location.timezone,
-                step_type='days',
-                step=step_days,
+                location=location,
+                step_days=step_days,
                 max_days=15000,  # Allow up to ~40 years
             )
 

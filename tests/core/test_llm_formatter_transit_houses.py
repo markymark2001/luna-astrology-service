@@ -82,6 +82,23 @@ class TestFindNatalHouse:
 class TestFormatNatalChartTransitHouses:
     """Integration tests: format_natal_chart uses natal houses for transit planets."""
 
+    def test_output_starts_with_chart_system_header_when_present(self):
+        """Chart-system metadata is surfaced before the formatted chart."""
+        chart_data = {
+            "chart_system": {"id": "western_tropical_whole_sign"},
+            "natal_chart": {
+                "planets": {},
+                "houses": {},
+                "points": {},
+            },
+            "aspects": {},
+            "transits": {"date": "2025-01-15", "planets": {}},
+        }
+
+        result = format_natal_chart(chart_data)
+
+        assert result.startswith("CHART_SYSTEM: western_tropical_whole_sign")
+
     def test_transit_planet_shows_correct_natal_house(self):
         """Transit planet house is computed from natal houses, not transit chart houses."""
         chart_data = {

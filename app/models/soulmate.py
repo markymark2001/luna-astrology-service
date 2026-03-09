@@ -5,6 +5,7 @@ from typing import Any
 from pydantic import BaseModel, Field
 
 from app.domain.models.birth_data import BirthData
+from app.models.responses import ChartSystemResponse
 
 
 class SoulmateRequest(BirthData):
@@ -120,6 +121,10 @@ class SoulmateChartResponse(BaseModel):
         ...,
         description="Soulmate's birth year for age calculation",
     )
+    chart_system: ChartSystemResponse = Field(
+        ...,
+        description="Chart-system metadata",
+    )
 
     class Config:
         json_schema_extra = {
@@ -161,5 +166,14 @@ class SoulmateChartResponse(BaseModel):
                 "user_mars_sign": "Ari",
                 "user_rising_sign": "Vir",
                 "soulmate_birth_year": 1998,
+                "chart_system": {
+                    "id": "western_tropical_whole_sign",
+                    "zodiac_type": "Tropical",
+                    "house_system": "Whole Sign",
+                    "house_system_identifier": "W",
+                    "perspective_type": "Apparent Geocentric",
+                    "provider": "kerykeion",
+                    "sidereal_mode": None,
+                },
             }
         }

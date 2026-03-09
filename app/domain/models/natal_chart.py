@@ -17,6 +17,7 @@ class NatalChart(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     birth_data: BirthData
+    chart_system: dict[str, Any]
     planets: dict[str, Any]
     houses: dict[str, Any]
     points: dict[str, Any]

@@ -20,6 +20,7 @@ from app.application.profile_service import ProfileService
 from app.application.soulmate_service import SoulmateService
 from app.application.transit_period_service import TransitPeriodService
 from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.config.settings import settings
 from app.core.error_handlers import (
     handle_astrology_service_error,
@@ -68,7 +69,7 @@ app = FastAPI(
 
 # Initialize provider and services (singleton pattern)
 config = get_preset(DetailLevel.CORE)
-provider = KerykeionProvider(config=config)
+provider = KerykeionProvider(config=config, chart_system=DEFAULT_CHART_SYSTEM)
 profile_service_instance = ProfileService(provider=provider)
 synastry_service_instance = SynastryService(provider=provider)
 soulmate_service_instance = SoulmateService(provider=provider)

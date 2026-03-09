@@ -4,6 +4,7 @@ import pytest
 
 from app.application.compatibility_service import SynastryService
 from app.config.astrology_presets import DEFAULT_CONFIG
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
@@ -14,7 +15,7 @@ class TestSynastryServiceRelationshipScore:
     @pytest.fixture
     def service(self) -> SynastryService:
         """Create a SynastryService with KerykeionProvider."""
-        provider = KerykeionProvider(config=DEFAULT_CONFIG)
+        provider = KerykeionProvider(config=DEFAULT_CONFIG, chart_system=DEFAULT_CHART_SYSTEM)
         return SynastryService(provider=provider)
 
     @pytest.fixture
@@ -81,3 +82,19 @@ class TestSynastryServiceRelationshipScore:
         assert "synastry" in result
         assert "aspects" in result["synastry"]
         assert isinstance(result["synastry"]["aspects"], list)
+
+    def test_analyze_synastry_includes_chart_system_metadata(
+        self, service: SynastryService, person1_data: BirthData, person2_data: BirthData
+    ):
+        """Synastry responses include canonical chart-system metadata."""
+        result = service.analyze_synastry(person1_data, person2_data)
+
+        assert result["chart_system"]["id"] == "western_tropical_whole_sign"
+
+    def test_analyze_synastry_compact_starts_with_chart_system_header(
+        self, service: SynastryService, person1_data: BirthData, person2_data: BirthData
+    ):
+        """Compact synastry output declares the chart system first."""
+        result = service.analyze_synastry_compact(person1_data, person2_data)
+
+        assert result.startswith("CHART_SYSTEM: western_tropical_whole_sign")

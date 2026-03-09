@@ -26,6 +26,15 @@ EXCLUDED_BODIES = {
 OUTER_PLANETS = {"uranus", "neptune", "pluto"}
 
 
+def _chart_system_header(data: dict[str, Any]) -> list[str]:
+    """Format chart-system metadata as a compact header line."""
+    chart_system = data.get("chart_system", {})
+    chart_system_id = chart_system.get("id")
+    if not chart_system_id:
+        return []
+    return [f"CHART_SYSTEM: {chart_system_id}", ""]
+
+
 def simplify_planets(planets: dict[str, Any]) -> dict[str, Any]:
     """Keep only essential planet fields for LLM consumption.
 
@@ -318,7 +327,8 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
     Returns:
         Multi-line formatted text block
     """
-    lines = _format_natal_sections(chart_data)
+    lines = _chart_system_header(chart_data)
+    lines.extend(_format_natal_sections(chart_data))
 
     # Current transits with corrected natal house placement
     natal_chart = chart_data.get("natal_chart", {})
@@ -351,7 +361,8 @@ def format_personal_profile(chart_data: dict[str, Any]) -> str:
     Returns:
         Multi-line formatted text block (excludes CURRENT TRANSITS section)
     """
-    lines = _format_natal_sections(chart_data)
+    lines = _chart_system_header(chart_data)
+    lines.extend(_format_natal_sections(chart_data))
     lines.extend(_format_transit_to_natal_aspects(chart_data))
     return "\n".join(lines).strip()
 
@@ -372,7 +383,7 @@ def format_transit_periods(transit_data: dict[str, Any]) -> str:
         Saturn conj natal Mars: Jan1-Mar30 exact Feb9 (0.01°)
         Mars opp natal Moon: Jan1-Mar30 exact Jan15 (0.01°)
     """
-    lines = []
+    lines = _chart_system_header(transit_data)
 
     # Period header (compact)
     period = transit_data.get("period", {})
@@ -510,7 +521,8 @@ def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, A
     Returns:
         Multi-line formatted text with natal chart + monthly transits
     """
-    lines = _format_natal_sections(chart_data)
+    lines = _chart_system_header(chart_data)
+    lines.extend(_format_natal_sections(chart_data))
 
     # Monthly transits (from transit_period_service)
     period = transit_data.get("period", {})
@@ -569,7 +581,7 @@ def format_synastry(synastry_data: dict[str, Any]) -> str:
     Returns:
         Multi-line formatted text block
     """
-    lines = []
+    lines = _chart_system_header(synastry_data)
 
     # Add compatibility score if present
     relationship_score = synastry_data.get("relationship_score")

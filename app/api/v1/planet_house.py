@@ -126,7 +126,8 @@ async def get_planet_house(
         return PlanetHouseResponse(
             planet=planet_name,
             house=house_int,
-            sign=sign
+            sign=sign,
+            chart_system=profile_data["chart_system"],
         )
 
     except InvalidBirthDataException as e:

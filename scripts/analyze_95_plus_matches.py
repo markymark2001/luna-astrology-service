@@ -10,6 +10,7 @@ from app.application.soulmate_service import (
     calculate_aspect_score,
 )
 from app.config.astrology_presets import DetailLevel, get_preset
+from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
@@ -241,7 +242,7 @@ def analyze_user(user: UserProfile, provider: KerykeionProvider, service: Soulma
 
 def main():
     config = get_preset(DetailLevel.CORE)
-    provider = KerykeionProvider(config)
+    provider = KerykeionProvider(config, chart_system=DEFAULT_CHART_SYSTEM)
     service = SoulmateService(provider=provider)
 
     print("=" * 80)
