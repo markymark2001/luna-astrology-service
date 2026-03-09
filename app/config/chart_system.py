@@ -8,7 +8,7 @@ from typing import Literal
 class ChartSystemId(StrEnum):
     """Supported chart-system identifiers."""
 
-    WESTERN_TROPICAL_WHOLE_SIGN = "western_tropical_whole_sign"
+    WESTERN_TROPICAL_PLACIDUS = "western_tropical_placidus"
 
 
 @dataclass(frozen=True)
@@ -34,10 +34,10 @@ class ChartSystemConfig:
 
 
 DEFAULT_CHART_SYSTEM = ChartSystemConfig(
-    id=ChartSystemId.WESTERN_TROPICAL_WHOLE_SIGN,
+    id=ChartSystemId.WESTERN_TROPICAL_PLACIDUS,
     zodiac_type="Tropical",
-    house_system="Whole Sign",
-    house_system_identifier="W",
+    house_system="Placidus",
+    house_system_identifier="P",
     perspective_type="Apparent Geocentric",
     provider="kerykeion",
     sidereal_mode=None,

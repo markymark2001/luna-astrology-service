@@ -148,8 +148,8 @@ class TestSoulmateResponseStructure:
         """Response includes the canonical chart-system metadata."""
         response = client.post("/api/v1/astrology/soulmate/chart", json=VALID_BIRTH_DATA)
         data = response.json()
-        assert data["chart_system"]["id"] == "western_tropical_whole_sign"
-        assert data["chart_system"]["house_system_identifier"] == "W"
+        assert data["chart_system"]["id"] == "western_tropical_placidus"
+        assert data["chart_system"]["house_system_identifier"] == "P"
 
     def test_planet_has_required_fields(self):
         """Each planet should have name, sign, position, house, retrograde."""

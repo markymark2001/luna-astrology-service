@@ -2,12 +2,12 @@
 
 from datetime import date
 
+import pytest
+
 from app.config.astrology_presets import DEFAULT_CONFIG
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
-
-ZODIAC_SIGNS = ["Ari", "Tau", "Gem", "Can", "Leo", "Vir", "Lib", "Sco", "Sag", "Cap", "Aqu", "Pis"]
 
 
 def _birth_data() -> BirthData:
@@ -27,45 +27,29 @@ def _provider() -> KerykeionProvider:
     return KerykeionProvider(config=DEFAULT_CONFIG, chart_system=DEFAULT_CHART_SYSTEM)
 
 
-def test_natal_chart_uses_explicit_tropical_whole_sign_settings():
+def test_natal_chart_uses_explicit_tropical_placidus_settings():
     provider = _provider()
 
     natal_chart = provider.calculate_natal_chart(_birth_data())
     subject = natal_chart.provider_data
 
-    assert natal_chart.chart_system["id"] == "western_tropical_whole_sign"
+    assert natal_chart.chart_system["id"] == "western_tropical_placidus"
     assert subject.zodiac_type == "Tropical"
-    assert subject.houses_system_identifier == "W"
+    assert subject.houses_system_identifier == "P"
     assert subject.sidereal_mode is None
     assert subject.perspective_type == "Apparent Geocentric"
 
 
-def test_whole_sign_houses_follow_ascendant_sign_sequence():
+def test_placidus_house_cusps_are_not_snapped_to_sign_boundaries():
     provider = _provider()
 
     natal_chart = provider.calculate_natal_chart(_birth_data())
-    ascendant_sign = natal_chart.points["ascendant"]["sign"]
-    start_index = ZODIAC_SIGNS.index(ascendant_sign)
+    first_house_abs_pos = natal_chart.houses["first_house"]["abs_pos"]
+    second_house_abs_pos = natal_chart.houses["second_house"]["abs_pos"]
 
-    assert natal_chart.houses["first_house"]["sign"] == ascendant_sign
-
-    house_names = [
-        "first_house",
-        "second_house",
-        "third_house",
-        "fourth_house",
-        "fifth_house",
-        "sixth_house",
-        "seventh_house",
-        "eighth_house",
-        "ninth_house",
-        "tenth_house",
-        "eleventh_house",
-        "twelfth_house",
-    ]
-    for offset, house_name in enumerate(house_names):
-        expected_sign = ZODIAC_SIGNS[(start_index + offset) % len(ZODIAC_SIGNS)]
-        assert natal_chart.houses[house_name]["sign"] == expected_sign
+    assert natal_chart.houses["first_house"]["sign"] == natal_chart.points["ascendant"]["sign"]
+    assert first_house_abs_pos == pytest.approx(193.6954, abs=0.01)
+    assert second_house_abs_pos == pytest.approx(220.7712, abs=0.01)
 
 
 def test_ephemeris_points_use_same_chart_system_settings():
@@ -79,5 +63,5 @@ def test_ephemeris_points_use_same_chart_system_settings():
 
     assert points
     assert points[0].zodiac_type == "Tropical"
-    assert points[0].houses_system_identifier == "W"
+    assert points[0].houses_system_identifier == "P"
     assert points[0].sidereal_mode is None

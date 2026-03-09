@@ -167,10 +167,10 @@ class SoulmateChartResponse(BaseModel):
                 "user_rising_sign": "Vir",
                 "soulmate_birth_year": 1998,
                 "chart_system": {
-                    "id": "western_tropical_whole_sign",
+                    "id": "western_tropical_placidus",
                     "zodiac_type": "Tropical",
-                    "house_system": "Whole Sign",
-                    "house_system_identifier": "W",
+                    "house_system": "Placidus",
+                    "house_system_identifier": "P",
                     "perspective_type": "Apparent Geocentric",
                     "provider": "kerykeion",
                     "sidereal_mode": None,

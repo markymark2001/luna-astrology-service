@@ -16,10 +16,10 @@ class FakeProvider:
     def calculate_natal_chart(self, birth_data):
         return SimpleNamespace(
             chart_system={
-                "id": "western_tropical_whole_sign",
+                "id": "western_tropical_placidus",
                 "zodiac_type": "Tropical",
-                "house_system": "Whole Sign",
-                "house_system_identifier": "W",
+                "house_system": "Placidus",
+                "house_system_identifier": "P",
                 "perspective_type": "Apparent Geocentric",
                 "provider": "kerykeion",
                 "sidereal_mode": None,
@@ -106,4 +106,4 @@ def test_generate_profile_includes_chart_system_metadata():
 
     result = service.generate_profile(_birth_data("America/New_York"))
 
-    assert result["chart_system"]["id"] == "western_tropical_whole_sign"
+    assert result["chart_system"]["id"] == "western_tropical_placidus"

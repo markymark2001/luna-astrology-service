@@ -89,7 +89,7 @@ class TestSynastryServiceRelationshipScore:
         """Synastry responses include canonical chart-system metadata."""
         result = service.analyze_synastry(person1_data, person2_data)
 
-        assert result["chart_system"]["id"] == "western_tropical_whole_sign"
+        assert result["chart_system"]["id"] == "western_tropical_placidus"
 
     def test_analyze_synastry_compact_starts_with_chart_system_header(
         self, service: SynastryService, person1_data: BirthData, person2_data: BirthData
@@ -97,4 +97,4 @@ class TestSynastryServiceRelationshipScore:
         """Compact synastry output declares the chart system first."""
         result = service.analyze_synastry_compact(person1_data, person2_data)
 
-        assert result.startswith("CHART_SYSTEM: western_tropical_whole_sign")
+        assert result.startswith("CHART_SYSTEM: western_tropical_placidus")

@@ -85,7 +85,7 @@ class TestFormatNatalChartTransitHouses:
     def test_output_starts_with_chart_system_header_when_present(self):
         """Chart-system metadata is surfaced before the formatted chart."""
         chart_data = {
-            "chart_system": {"id": "western_tropical_whole_sign"},
+            "chart_system": {"id": "western_tropical_placidus"},
             "natal_chart": {
                 "planets": {},
                 "houses": {},
@@ -97,7 +97,7 @@ class TestFormatNatalChartTransitHouses:
 
         result = format_natal_chart(chart_data)
 
-        assert result.startswith("CHART_SYSTEM: western_tropical_whole_sign")
+        assert result.startswith("CHART_SYSTEM: western_tropical_placidus")
 
     def test_transit_planet_shows_correct_natal_house(self):
         """Transit planet house is computed from natal houses, not transit chart houses."""
