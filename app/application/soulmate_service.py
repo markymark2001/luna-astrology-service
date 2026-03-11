@@ -798,9 +798,33 @@ class SoulmateService:
                 error_degrees = error_degrees - 360
             correction_minutes = int(error_degrees * 4)
             refined_total = (est_hour * 60 + est_minute + correction_minutes) % 1440
-            return (refined_total // 60, refined_total % 60)
+            refined_hour = refined_total // 60
+            refined_minute = refined_total % 60
+
+            # Validate refined time (can land in DST gaps)
+            refined_birth = BirthData(
+                year=year,
+                month=month,
+                day=day,
+                hour=refined_hour,
+                minute=refined_minute,
+                latitude=latitude,
+                longitude=longitude,
+                timezone=timezone,
+            )
+            self.provider.calculate_natal_chart(refined_birth)
+            return (refined_hour, refined_minute)
         except Exception:
-            return (est_hour, est_minute)
+            # Fall back to brute force search that skips invalid local times.
+            return self._find_hour_for_ascendant(
+                year,
+                month,
+                day,
+                target_rising_sign,
+                latitude,
+                longitude,
+                timezone,
+            )
 
     def _find_hour_for_ascendant(
         self,
