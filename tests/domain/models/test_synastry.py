@@ -10,6 +10,7 @@ def create_test_natal_chart(year: int = 1990) -> NatalChart:
     birth_data = BirthData(year=year, month=3, day=15)
     return NatalChart(
         birth_data=birth_data,
+        chart_system={},
         planets={},
         houses={},
         points={},

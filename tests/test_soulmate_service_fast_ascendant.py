@@ -14,6 +14,7 @@ class _DummyProvider(IAstrologyProvider):
         if birth_data.hour == 0 and birth_data.minute == 0:
             return NatalChart(
                 birth_data=birth_data,
+                chart_system={},
                 planets={},
                 houses={},
                 points={"ascendant": {"abs_pos": 0.0, "sign": "Ari"}},
