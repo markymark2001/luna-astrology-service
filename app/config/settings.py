@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -13,6 +14,7 @@ class Settings(BaseSettings):
     # Server
     host: str = "0.0.0.0"
     port: int = 8001
+    compute_pool_size: int = Field(1, alias="ASTROLOGY_COMPUTE_POOL_SIZE")
 
     # Sentry
     sentry_dsn: str = ""

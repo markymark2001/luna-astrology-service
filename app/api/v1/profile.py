@@ -3,22 +3,11 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import PlainTextResponse
 
-from app.application.profile_service import ProfileService
+from app.infrastructure.compute_runtime import AstrologyComputeRuntime, get_compute_runtime
 from app.models.requests import ProfileRequest
 from app.models.responses import PlacementsResponse
 
 router = APIRouter(prefix="/astrology", tags=["Astrology Profile"])
-
-
-def get_profile_service() -> ProfileService | None:
-    """
-    Dependency injection for ProfileService.
-
-    This will be properly wired in main.py with the provider instance.
-    For now, returns None (will be replaced by main.py setup).
-    """
-    # This will be overridden in main.py
-    return None
 
 
 # Called by: backend/app/infrastructure/providers/astrology_provider.py
@@ -31,7 +20,7 @@ def get_profile_service() -> ProfileService | None:
 )
 async def get_profile(
     request: ProfileRequest,
-    profile_service: ProfileService | None = Depends(get_profile_service)
+    compute_runtime: AstrologyComputeRuntime = Depends(get_compute_runtime),
 ) -> str:
     """
     Get complete astrological profile as compact text for LLM context.
@@ -44,21 +33,11 @@ async def get_profile(
     - TRANSIT ASPECTS TO NATAL: Transit Mars opposite natal Sun (orb 2.3)
 
     Note: Uses CORE preset configuration (10 planets, 2 points, 6 houses, 4° orbs).
-
-    Args:
-        request: Birth data and optional transit date
-        profile_service: Injected profile service
-
-    Returns:
-        Compact text optimized for LLM context (~80% token reduction)
-
-    Raises:
-        HTTPException: Handled by FastAPI exception handlers
     """
-    assert profile_service is not None, "ProfileService not configured"
-    return profile_service.generate_profile_compact(
-        birth_data=request,
-        transit_date=request.transit_date
+    return await compute_runtime.run(
+        "profile_compact",
+        request.model_dump(mode="json"),
+        route_name="/api/v1/astrology/profile",
     )
 
 
@@ -72,35 +51,18 @@ async def get_profile(
 )
 async def get_lookup_profile(
     request: ProfileRequest,
-    profile_service: ProfileService = Depends(get_profile_service)
+    compute_runtime: AstrologyComputeRuntime = Depends(get_compute_runtime),
 ) -> str:
     """
     Get astrological profile for tool lookups (e.g., relationship profiles).
 
     Unlike /profile, excludes CURRENT TRANSITS section (where planets are today)
-    since the user's context already contains current sky positions. Includes:
-    - PLANETS: natal planet positions
-    - POINTS: Ascendant, MC, etc.
-    - HOUSES: house cusps
-    - NATAL ASPECTS: aspects between natal planets
-    - TRANSIT ASPECTS TO NATAL: how today's transits affect THIS person's chart
-
-    Use this endpoint when looking up other people's profiles during conversation,
-    avoiding redundant current sky data that's already in the user's system context.
-
-    Args:
-        request: Birth data and optional transit date
-        profile_service: Injected profile service
-
-    Returns:
-        Compact text with person-specific data only
-
-    Raises:
-        HTTPException: Handled by FastAPI exception handlers
+    since the user's context already contains current sky positions.
     """
-    return profile_service.generate_personal_profile_compact(
-        birth_data=request,
-        transit_date=request.transit_date
+    return await compute_runtime.run(
+        "lookup_profile_compact",
+        request.model_dump(mode="json"),
+        route_name="/api/v1/astrology/profile/lookup",
     )
 
 
@@ -114,32 +76,14 @@ async def get_lookup_profile(
 )
 async def get_monthly_profile(
     request: ProfileRequest,
-    profile_service: ProfileService = Depends(get_profile_service)
+    compute_runtime: AstrologyComputeRuntime = Depends(get_compute_runtime),
 ) -> str:
-    """
-    Get natal chart + monthly transits as compact text for proactive messages.
-
-    Returns word-based compact format with:
-    - PLANETS: Sun in Aries 15 deg (H1)
-    - POINTS: Ascendant in Cancer 10 deg
-    - HOUSES: 1st House: Aries
-    - NATAL ASPECTS: Sun conjunct Mercury (orb 1.2)
-    - MONTHLY TRANSITS: Saturn conj Mars: Jan1-31 exact Jan15 (0.5°)
-
-    Excludes daily transits (CURRENT TRANSITS, TRANSIT ASPECTS TO NATAL)
-    since proactive messages may be viewed at any time.
-
-    Args:
-        request: Birth data (transit_date is ignored - uses current month)
-        profile_service: Injected profile service
-
-    Returns:
-        Compact text with natal chart + monthly transits
-
-    Raises:
-        HTTPException: Handled by FastAPI exception handlers
-    """
-    return profile_service.generate_monthly_profile_compact(birth_data=request)
+    """Get natal chart + monthly transits as compact text for proactive messages."""
+    return await compute_runtime.run(
+        "monthly_profile_compact",
+        request.model_dump(mode="json"),
+        route_name="/api/v1/astrology/profile/monthly",
+    )
 
 
 # Called by: backend/app/api/v1/profile.py
@@ -152,25 +96,12 @@ async def get_monthly_profile(
 )
 async def get_placements(
     request: ProfileRequest,
-    profile_service: ProfileService = Depends(get_profile_service)
+    compute_runtime: AstrologyComputeRuntime = Depends(get_compute_runtime),
 ) -> PlacementsResponse:
-    """
-    Get natal chart placements for profile page display.
-
-    Returns structured data for displaying:
-    - Sun sign
-    - Moon sign
-    - Ascendant (Rising) sign
-    - All 10 planets with their signs and houses
-
-    Args:
-        request: Birth data
-        profile_service: Injected profile service
-
-    Returns:
-        PlacementsResponse with all placement data
-
-    Raises:
-        HTTPException: Handled by FastAPI exception handlers
-    """
-    return profile_service.generate_placements(birth_data=request)
+    """Get natal chart placements for profile page display."""
+    result = await compute_runtime.run(
+        "placements",
+        request.model_dump(mode="json"),
+        route_name="/api/v1/astrology/profile/placements",
+    )
+    return PlacementsResponse.model_validate(result)
