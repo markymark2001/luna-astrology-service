@@ -6,8 +6,10 @@ import asyncio
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
+from time import monotonic
 from typing import Any
 
+import sentry_sdk
 from fastapi import Request
 
 from app.application.chart_payloads import natal_chart_payload
@@ -17,6 +19,11 @@ from app.application.soulmate_service import SoulmateService
 from app.application.transit_period_service import TransitPeriodService
 from app.config.astrology_presets import DetailLevel, get_preset
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
+from app.config.constants import (
+    ASTROLOGY_COMPUTE_QUEUE_WARNING_MS,
+    ASTROLOGY_COMPUTE_TOTAL_WARNING_MS,
+    ASTROLOGY_COMPUTE_WARNING_COOLDOWN_SECONDS,
+)
 from app.config.settings import Settings, settings
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.domain.models.birth_data import BirthData
@@ -192,6 +199,7 @@ class AstrologyComputeRuntime:
     def __init__(self, max_workers: int) -> None:
         self.max_workers = max_workers
         self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        self._last_warning_ts: dict[tuple[str, str], float] = {}
 
     async def run(self, task_name: str, payload: dict[str, Any], route_name: str) -> Any:
         """Execute a task and log queue, execution, and total duration."""
@@ -226,6 +234,20 @@ class AstrologyComputeRuntime:
                 envelope["execution_ms"],
                 total_ms,
             )
+            self._report_queue_pressure(
+                route_name=route_name,
+                task_name=task_name,
+                queue_wait_ms=envelope["queue_wait_ms"],
+                execution_ms=envelope["execution_ms"],
+                total_ms=total_ms,
+            )
+            self._report_slow_task(
+                route_name=route_name,
+                task_name=task_name,
+                queue_wait_ms=envelope["queue_wait_ms"],
+                execution_ms=envelope["execution_ms"],
+                total_ms=total_ms,
+            )
             return envelope["result"]
 
         logger.warning(
@@ -238,6 +260,102 @@ class AstrologyComputeRuntime:
             envelope["exception_type"],
         )
         raise _restore_exception(envelope["exception_type"], envelope["message"])
+
+    def _report_queue_pressure(
+        self,
+        *,
+        route_name: str,
+        task_name: str,
+        queue_wait_ms: float,
+        execution_ms: float,
+        total_ms: float,
+    ) -> None:
+        if queue_wait_ms < ASTROLOGY_COMPUTE_QUEUE_WARNING_MS:
+            return
+        if not self._warning_allowed("queue_pressure", task_name):
+            return
+
+        message = (
+            "Astrology compute queue pressure detected "
+            f"(task={task_name}, route={route_name}, queue_wait_ms={queue_wait_ms:.1f})"
+        )
+        self._capture_warning(
+            message=message,
+            error_type="astrology_compute_queue_pressure",
+            route_name=route_name,
+            task_name=task_name,
+            queue_wait_ms=queue_wait_ms,
+            execution_ms=execution_ms,
+            total_ms=total_ms,
+        )
+
+    def _report_slow_task(
+        self,
+        *,
+        route_name: str,
+        task_name: str,
+        queue_wait_ms: float,
+        execution_ms: float,
+        total_ms: float,
+    ) -> None:
+        if total_ms < ASTROLOGY_COMPUTE_TOTAL_WARNING_MS:
+            return
+        if not self._warning_allowed("slow_task", task_name):
+            return
+
+        message = (
+            "Astrology compute slow task detected "
+            f"(task={task_name}, route={route_name}, total_ms={total_ms:.1f})"
+        )
+        self._capture_warning(
+            message=message,
+            error_type="astrology_compute_slow_task",
+            route_name=route_name,
+            task_name=task_name,
+            queue_wait_ms=queue_wait_ms,
+            execution_ms=execution_ms,
+            total_ms=total_ms,
+        )
+
+    def _warning_allowed(self, warning_type: str, task_name: str) -> bool:
+        key = (warning_type, task_name)
+        now = monotonic()
+        last_sent = self._last_warning_ts.get(key, 0.0)
+        if now - last_sent < ASTROLOGY_COMPUTE_WARNING_COOLDOWN_SECONDS:
+            return False
+        self._last_warning_ts[key] = now
+        return True
+
+    def _capture_warning(
+        self,
+        *,
+        message: str,
+        error_type: str,
+        route_name: str,
+        task_name: str,
+        queue_wait_ms: float,
+        execution_ms: float,
+        total_ms: float,
+    ) -> None:
+        try:
+            with sentry_sdk.push_scope() as scope:
+                scope.set_tag("error_type", error_type)
+                scope.set_tag("service_role", "astrology-service")
+                scope.set_tag("astrology_task", task_name)
+                scope.set_context(
+                    "astrology_compute_runtime",
+                    {
+                        "route": route_name,
+                        "task": task_name,
+                        "queue_wait_ms": queue_wait_ms,
+                        "execution_ms": execution_ms,
+                        "total_ms": total_ms,
+                        "compute_pool_size": self.max_workers,
+                    },
+                )
+                sentry_sdk.capture_message(message, level="warning")
+        except Exception as error:
+            logger.debug("Failed to report astrology compute warning to Sentry: %s", error)
 
     def shutdown(self) -> None:
         """Shut down the shared worker pool."""
