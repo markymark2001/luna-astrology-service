@@ -1,4 +1,4 @@
-"""Route wiring tests for astrology process-pool execution."""
+"""Route wiring tests for astrology shared-runtime execution."""
 
 from __future__ import annotations
 

@@ -1,12 +1,11 @@
-"""Shared process-pool execution for CPU-bound astrology tasks."""
+"""Shared bounded thread-pool execution for astrology tasks."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
-import multiprocessing
 import time
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 
 from fastapi import Request
@@ -47,7 +46,7 @@ _WORKER_SERVICES: dict[str, Any] | None = None
 
 
 def _get_worker_services() -> dict[str, Any]:
-    """Lazily initialize astrology services once per worker process."""
+    """Lazily initialize astrology services once per executor worker thread."""
     global _WORKER_SERVICES
     if _WORKER_SERVICES is None:
         provider = KerykeionProvider(
@@ -122,7 +121,7 @@ def _serialize_planet_house(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: float) -> dict[str, Any]:
-    """Execute a serializable astrology task inside the process pool."""
+    """Execute a serializable astrology task inside the shared worker pool."""
     started_at = time.time()
     try:
         services = _get_worker_services()
@@ -188,24 +187,11 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
 
 
 class AstrologyComputeRuntime:
-    """Shared process-pool runtime for CPU-bound astrology work."""
+    """Shared bounded thread-pool runtime for astrology work."""
 
     def __init__(self, max_workers: int) -> None:
         self.max_workers = max_workers
-        self._executor_kind = "process"
-        try:
-            self._executor = ProcessPoolExecutor(
-                max_workers=max_workers,
-                mp_context=multiprocessing.get_context("spawn"),
-            )
-        except (NotImplementedError, OSError, PermissionError) as exc:
-            self._executor = ThreadPoolExecutor(max_workers=max_workers)
-            self._executor_kind = "thread"
-            logger.warning(
-                "Falling back to thread pool for astrology compute runtime workers=%s reason=%s",
-                max_workers,
-                exc,
-            )
+        self._executor = ThreadPoolExecutor(max_workers=max_workers)
 
     async def run(self, task_name: str, payload: dict[str, Any], route_name: str) -> Any:
         """Execute a task and log queue, execution, and total duration."""
@@ -254,7 +240,7 @@ class AstrologyComputeRuntime:
         raise _restore_exception(envelope["exception_type"], envelope["message"])
 
     def shutdown(self) -> None:
-        """Shut down the process pool."""
+        """Shut down the shared worker pool."""
         self._executor.shutdown(wait=True)
 
 
@@ -272,7 +258,7 @@ def _restore_exception(exception_type: str, message: str) -> Exception:
 def create_compute_runtime(settings: Settings) -> AstrologyComputeRuntime:
     """Create the shared compute runtime from settings."""
     logger.info(
-        "Initializing astrology compute runtime with %s worker process(es)",
+        "Initializing astrology compute runtime with %s worker thread(s)",
         settings.compute_pool_size,
     )
     return AstrologyComputeRuntime(max_workers=settings.compute_pool_size)
