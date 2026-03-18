@@ -16,6 +16,7 @@ from sentry_sdk.integrations.fastapi import FastApiIntegration
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 from app.api.v1 import api_router
+from app.config.sentry_release import get_sentry_release
 from app.config.settings import settings
 from app.core.error_handlers import (
     handle_astrology_service_error,
@@ -38,6 +39,7 @@ if settings.env == "prod" and settings.sentry_dsn:
     sentry_sdk.init(
         dsn=settings.sentry_dsn,
         environment=f"{settings.env}-astrology",
+        release=get_sentry_release("taia-astrology"),
         traces_sample_rate=0.2,
         send_default_pii=False,
         integrations=[

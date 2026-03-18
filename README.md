@@ -162,21 +162,22 @@ This service is configured for Railway deployment.
    railway init
    ```
 
-2. **Deploy:**
+2. **Set Config-as-Code path:**
+   ```text
+   /railway.astrology.toml
+   ```
+
+3. **Deploy:**
    ```bash
    railway up
    ```
 
-3. **Configure environment variables (optional):**
-   ```bash
-   railway variables set ENV=prod
-   railway variables set DEBUG=false
-   ```
+4. **Configure environment variables:**
+   Set them in Railway service or shared environment variables.
 
 Railway will automatically:
-- Detect Python via `.python-version`
-- Install dependencies from `requirements.txt`
-- Run the web server from `Procfile`
+- Build from `Dockerfile.astrology`
+- Run the start command from `railway.astrology.toml`
 - Monitor health via `/health` endpoint
 
 ### Environment Variables
