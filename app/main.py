@@ -30,6 +30,9 @@ from app.core.exceptions import (
 )
 from app.infrastructure.compute_runtime import create_compute_runtime
 
+logger = logging.getLogger(__name__)
+SERVICE_ROLE = "astrology-service"
+
 # Initialize Sentry for error tracking (production only)
 if settings.env == "prod" and settings.sentry_dsn:
     sentry_sdk.init(
@@ -52,11 +55,17 @@ if settings.env == "prod" and settings.sentry_dsn:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize and clean up the shared astrology compute runtime."""
+    logger.info("🚀 Starting %s runtime...", SERVICE_ROLE)
+    app.state.service_role = SERVICE_ROLE
+    sentry_sdk.set_tag("service_role", SERVICE_ROLE)
     app.state.astrology_compute_runtime = create_compute_runtime(settings)
     try:
+        logger.info("✅ %s runtime started successfully", SERVICE_ROLE)
         yield
     finally:
+        logger.info("🛑 Shutting down %s runtime...", SERVICE_ROLE)
         app.state.astrology_compute_runtime.shutdown()
+        logger.info("✅ %s runtime shutdown complete", SERVICE_ROLE)
 
 
 # Create FastAPI application

@@ -155,3 +155,8 @@ def test_lightweight_recalculate_endpoint_stays_inline():
 
     assert response.status_code == 200
     assert fake_runtime.calls == []
+
+
+def test_lifespan_sets_astrology_service_role():
+    with TestClient(app):
+        assert app.state.service_role == "astrology-service"
