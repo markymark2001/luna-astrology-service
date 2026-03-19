@@ -2,11 +2,46 @@
 
 from __future__ import annotations
 
+from types import SimpleNamespace
+
 from app.infrastructure.compute_runtime import AstrologyComputeRuntime
+
+
+def _patch_process_pool(monkeypatch) -> dict[str, object]:
+    created: dict[str, object] = {}
+
+    def fake_get_context(method: str):
+        created["method"] = method
+        return SimpleNamespace(name=method)
+
+    class FakeProcessPoolExecutor:
+        def __init__(self, *, max_workers: int, mp_context) -> None:
+            created["max_workers"] = max_workers
+            created["mp_context"] = mp_context
+
+        def shutdown(self, wait: bool = True) -> None:
+            created["shutdown_wait"] = wait
+
+    monkeypatch.setattr("app.infrastructure.compute_runtime.multiprocessing.get_context", fake_get_context)
+    monkeypatch.setattr("app.infrastructure.compute_runtime.ProcessPoolExecutor", FakeProcessPoolExecutor)
+    return created
+
+
+def test_runtime_uses_spawned_process_pool(monkeypatch) -> None:
+    created = _patch_process_pool(monkeypatch)
+
+    runtime = AstrologyComputeRuntime(max_workers=3)
+    runtime.shutdown()
+
+    assert created["method"] == "spawn"
+    assert created["max_workers"] == 3
+    assert created["mp_context"] == SimpleNamespace(name="spawn")
+    assert created["shutdown_wait"] is True
 
 
 def test_queue_pressure_warning_captures_sentry_message(monkeypatch) -> None:
     messages: list[tuple[str, str]] = []
+    _patch_process_pool(monkeypatch)
 
     class _Scope:
         def __enter__(self):
@@ -47,6 +82,7 @@ def test_queue_pressure_warning_captures_sentry_message(monkeypatch) -> None:
 
 def test_slow_task_warning_captures_sentry_message(monkeypatch) -> None:
     messages: list[tuple[str, str]] = []
+    _patch_process_pool(monkeypatch)
 
     class _Scope:
         def __enter__(self):
@@ -87,6 +123,7 @@ def test_slow_task_warning_captures_sentry_message(monkeypatch) -> None:
 
 def test_warning_cooldown_suppresses_duplicate_task_signal(monkeypatch) -> None:
     messages: list[tuple[str, str]] = []
+    _patch_process_pool(monkeypatch)
 
     class _Scope:
         def __enter__(self):

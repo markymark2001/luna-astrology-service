@@ -97,10 +97,14 @@ class FakeRuntime:
     def __init__(self, results: dict[str, object]):
         self.results = results
         self.calls: list[tuple[str, dict, str]] = []
+        self.shutdown_called = False
 
     async def run(self, task_name: str, payload: dict, route_name: str):
         self.calls.append((task_name, payload, route_name))
         return self.results[task_name]
+
+    def shutdown(self) -> None:
+        self.shutdown_called = True
 
 
 def test_cpu_bound_routes_use_shared_compute_runtime():
@@ -157,6 +161,11 @@ def test_lightweight_recalculate_endpoint_stays_inline():
     assert fake_runtime.calls == []
 
 
-def test_lifespan_sets_astrology_service_role():
+def test_lifespan_sets_astrology_service_role(monkeypatch):
+    fake_runtime = FakeRuntime({})
+    monkeypatch.setattr("app.main.create_compute_runtime", lambda settings: fake_runtime)
+
     with TestClient(app):
         assert app.state.service_role == "astrology-service"
+
+    assert fake_runtime.shutdown_called is True

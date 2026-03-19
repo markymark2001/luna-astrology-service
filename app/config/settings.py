@@ -1,15 +1,5 @@
-import os
-
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-from app.config.constants import ASTROLOGY_COMPUTE_POOL_SIZE_CAP
-
-
-def _default_compute_pool_size() -> int:
-    """Size the compute pool from available CPUs unless the env overrides it."""
-    available_cpu_count = os.cpu_count() or 1
-    return max(1, min(available_cpu_count, ASTROLOGY_COMPUTE_POOL_SIZE_CAP))
 
 
 class Settings(BaseSettings):
@@ -24,11 +14,7 @@ class Settings(BaseSettings):
     # Server
     host: str = "0.0.0.0"
     port: int = 8001
-    compute_pool_size: int = Field(
-        default_factory=_default_compute_pool_size,
-        alias="ASTROLOGY_COMPUTE_POOL_SIZE",
-        ge=1,
-    )
+    compute_pool_size: int = Field(1, alias="ASTROLOGY_COMPUTE_POOL_SIZE", ge=1)
 
     # Sentry
     sentry_dsn: str = ""

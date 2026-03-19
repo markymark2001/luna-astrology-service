@@ -1,11 +1,12 @@
-"""Shared bounded thread-pool execution for astrology tasks."""
+"""Shared bounded process-pool execution for astrology tasks."""
 
 from __future__ import annotations
 
 import asyncio
 import logging
+import multiprocessing
 import time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ProcessPoolExecutor
 from time import monotonic
 from typing import Any
 
@@ -53,7 +54,7 @@ _WORKER_SERVICES: dict[str, Any] | None = None
 
 
 def _get_worker_services() -> dict[str, Any]:
-    """Lazily initialize astrology services once per executor worker thread."""
+    """Lazily initialize astrology services once per executor worker process."""
     global _WORKER_SERVICES
     if _WORKER_SERVICES is None:
         provider = KerykeionProvider(
@@ -194,11 +195,14 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
 
 
 class AstrologyComputeRuntime:
-    """Shared bounded thread-pool runtime for astrology work."""
+    """Shared bounded process-pool runtime for astrology work."""
 
     def __init__(self, max_workers: int) -> None:
         self.max_workers = max_workers
-        self._executor = ThreadPoolExecutor(max_workers=max_workers)
+        self._executor = ProcessPoolExecutor(
+            max_workers=max_workers,
+            mp_context=multiprocessing.get_context("spawn"),
+        )
         self._last_warning_ts: dict[tuple[str, str], float] = {}
 
     async def run(self, task_name: str, payload: dict[str, Any], route_name: str) -> Any:
@@ -376,7 +380,7 @@ def _restore_exception(exception_type: str, message: str) -> Exception:
 def create_compute_runtime(settings: Settings) -> AstrologyComputeRuntime:
     """Create the shared compute runtime from settings."""
     logger.info(
-        "Initializing astrology compute runtime with %s worker thread(s)",
+        "Initializing astrology compute runtime with %s worker process(es)",
         settings.compute_pool_size,
     )
     return AstrologyComputeRuntime(max_workers=settings.compute_pool_size)
