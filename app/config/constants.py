@@ -1,5 +1,9 @@
 """Infrastructure constants for astrology runtime behavior and monitoring."""
 
+# Cap the default compute pool size to avoid oversubscribing large hosts.
+# Production can still raise this via ASTROLOGY_COMPUTE_POOL_SIZE when needed.
+ASTROLOGY_COMPUTE_POOL_SIZE_CAP = 8
+
 # Queue-wait threshold for warning about astrology compute backlog.
 # 250ms is long enough to filter out normal scheduling noise while still
 # surfacing real queueing before users see large latency spikes.
