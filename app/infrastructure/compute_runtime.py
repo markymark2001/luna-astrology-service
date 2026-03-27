@@ -16,7 +16,6 @@ from fastapi import Request
 from app.application.chart_payloads import natal_chart_payload
 from app.application.compatibility_service import SynastryService
 from app.application.profile_service import ProfileService
-from app.application.soulmate_service import SoulmateService
 from app.application.transit_period_service import TransitPeriodService
 from app.config.astrology_presets import DetailLevel, get_preset
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
@@ -27,10 +26,8 @@ from app.config.constants import (
 )
 from app.config.settings import Settings, settings
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
-from app.domain.models.birth_data import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 from app.models.requests import PlanetHouseRequest, ProfileRequest, SynastryRequest, TransitPeriodRequest
-from app.models.soulmate import SoulmateRequest
 
 logger = logging.getLogger(__name__)
 
@@ -64,23 +61,9 @@ def _get_worker_services() -> dict[str, Any]:
         _WORKER_SERVICES = {
             "profile": ProfileService(provider=provider),
             "synastry": SynastryService(provider=provider),
-            "soulmate": SoulmateService(provider=provider),
             "transit_period": TransitPeriodService(provider=provider),
         }
     return _WORKER_SERVICES
-
-
-def _serialize_natal_chart_for_style(birth_data: BirthData) -> dict[str, Any]:
-    """Return natal chart payload for style generation without transit work."""
-    profile_service: ProfileService = _get_worker_services()["profile"]
-    natal_chart = profile_service.provider.calculate_natal_chart(birth_data)
-    natal_payload = natal_chart_payload(natal_chart)
-    planets = {k: v for k, v in natal_payload["planets"].items() if k != "birth_data"}
-    return {
-        "planets": planets,
-        "points": natal_payload["points"],
-        "chart_system": natal_chart.chart_system,
-    }
 
 
 def _serialize_planet_house(payload: dict[str, Any]) -> dict[str, Any]:
@@ -154,13 +137,6 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
                 request.person1,
                 request.person2,
             )
-        elif task_name == "soulmate_chart":
-            request = SoulmateRequest.model_validate(payload)
-            result = services["soulmate"].generate_soulmate_chart(
-                user_birth_data=request,
-                user_gender=request.user_gender,
-                soulmate_sex=request.soulmate_sex,
-            ).model_dump(mode="json")
         elif task_name == "transit_period_compact":
             request = TransitPeriodRequest.model_validate(payload)
             result = services["transit_period"].generate_transit_period_compact(
@@ -170,9 +146,6 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
             )
         elif task_name == "planet_house":
             result = _serialize_planet_house(payload)
-        elif task_name == "style_chart":
-            request = BirthData.model_validate(payload)
-            result = _serialize_natal_chart_for_style(request)
         else:
             raise ValueError(f"Unknown astrology compute task: {task_name}")
 

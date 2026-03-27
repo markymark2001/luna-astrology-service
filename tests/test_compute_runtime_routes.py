@@ -42,18 +42,14 @@ PLANET_HOUSE_PAYLOAD = {
     "planet": "venus",
 }
 
-STYLE_RESULT = {
-    "planets": {"sun": {"name": "Sun", "sign": "Gem", "position": 1, "house": 1}},
-    "points": {"ascendant": {"name": "Ascendant", "sign": "Lib", "position": 10}},
-    "chart_system": {
-        "id": "western_tropical_placidus",
-        "zodiac_type": "Tropical",
-        "house_system": "Placidus",
-        "house_system_identifier": "P",
-        "perspective_type": "Apparent Geocentric",
-        "provider": "kerykeion",
-        "sidereal_mode": None,
-    },
+CHART_SYSTEM_RESULT = {
+    "id": "western_tropical_placidus",
+    "zodiac_type": "Tropical",
+    "house_system": "Placidus",
+    "house_system_identifier": "P",
+    "perspective_type": "Apparent Geocentric",
+    "provider": "kerykeion",
+    "sidereal_mode": None,
 }
 
 PLACEMENTS_RESULT = {
@@ -64,30 +60,14 @@ PLACEMENTS_RESULT = {
         {"name": "Sun", "sign": "Gem", "house": 1},
         {"name": "Moon", "sign": "Tau", "house": 12},
     ],
-    "chart_system": STYLE_RESULT["chart_system"],
-}
-
-SOULMATE_RESULT = {
-    "planets": {
-        "sun": {"name": "Sun", "sign": "Sag", "position": 15.5, "house": 7, "retrograde": False},
-        "moon": {"name": "Moon", "sign": "Leo", "position": 22.3, "house": 5, "retrograde": False},
-    },
-    "houses": {"first_house": {"sign": "Libra"}},
-    "points": {"ascendant": {"name": "Ascendant", "sign": "Lib", "position": 10.2}},
-    "aspects": [],
-    "compatibility_percent": 92,
-    "user_venus_sign": "Tau",
-    "user_mars_sign": "Ari",
-    "user_rising_sign": "Vir",
-    "soulmate_birth_year": 1998,
-    "chart_system": STYLE_RESULT["chart_system"],
+    "chart_system": CHART_SYSTEM_RESULT,
 }
 
 PLANET_HOUSE_RESULT = {
     "planet": "venus",
     "house": 7,
     "sign": "Taurus",
-    "chart_system": STYLE_RESULT["chart_system"],
+    "chart_system": CHART_SYSTEM_RESULT,
 }
 
 
@@ -115,10 +95,8 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
             "monthly_profile_compact": "monthly",
             "placements": PLACEMENTS_RESULT,
             "synastry_compact": "synastry",
-            "soulmate_chart": SOULMATE_RESULT,
             "transit_period_compact": "transit",
             "planet_house": PLANET_HOUSE_RESULT,
-            "style_chart": STYLE_RESULT,
         }
     )
     app.state.astrology_compute_runtime = fake_runtime
@@ -130,10 +108,8 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
         ("/api/v1/astrology/profile/monthly", BASE_BIRTH_DATA, "monthly_profile_compact"),
         ("/api/v1/astrology/profile/placements", BASE_BIRTH_DATA, "placements"),
         ("/api/v1/astrology/synastry", SYNASTRY_PAYLOAD, "synastry_compact"),
-        ("/api/v1/astrology/soulmate/chart", BASE_BIRTH_DATA, "soulmate_chart"),
         ("/api/v1/astrology/transits/period", TRANSIT_PERIOD_PAYLOAD, "transit_period_compact"),
         ("/api/v1/astrology/planet-house", PLANET_HOUSE_PAYLOAD, "planet_house"),
-        ("/api/v1/astrology/style/chart", BASE_BIRTH_DATA, "style_chart"),
     ]
 
     for route, payload, task_name in routes:
@@ -141,25 +117,6 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
         assert response.status_code == 200, route
         assert fake_runtime.calls[-1][0] == task_name
         assert fake_runtime.calls[-1][2] == route
-
-
-def test_lightweight_recalculate_endpoint_stays_inline():
-    fake_runtime = FakeRuntime({})
-    app.state.astrology_compute_runtime = fake_runtime
-    client = TestClient(app)
-
-    response = client.post(
-        "/api/v1/astrology/soulmate/recalculate-birth-date",
-        json={
-            "user_birth_year": 1990,
-            "user_gender": "female",
-            "soulmate_sex": "male",
-        },
-    )
-
-    assert response.status_code == 200
-    assert fake_runtime.calls == []
-
 
 def test_lifespan_sets_astrology_service_role(monkeypatch):
     fake_runtime = FakeRuntime({})

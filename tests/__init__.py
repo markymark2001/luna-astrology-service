@@ -1,1 +1,0 @@
-"""Astrology service tests package."""
