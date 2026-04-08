@@ -77,7 +77,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
                 "sun", "moon", "mercury", "venus", "mars",
                 "jupiter", "saturn", "uranus", "neptune", "pluto"
             ],
-            points=["ascendant", "medium_coeli"],
+            points=["ascendant", "medium_coeli", "true_north_lunar_node"],
             houses=[
                 "first_house", "second_house", "third_house", "fourth_house",
                 "fifth_house", "sixth_house", "seventh_house", "eighth_house",
@@ -100,7 +100,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             points=[
                 "ascendant", "medium_coeli",
                 "descendant", "imum_coeli",
-                "mean_node"  # North Node
+                "true_north_lunar_node"  # North Node
             ],
             houses=[
                 "first_house", "second_house", "third_house", "fourth_house",
@@ -119,11 +119,12 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             planets=[
                 "sun", "moon", "mercury", "venus", "mars",
                 "jupiter", "saturn", "uranus", "neptune", "pluto",
-                "chiron", "true_node", "mean_node"
+                "chiron"
             ],
             points=[
                 "ascendant", "medium_coeli",
                 "descendant", "imum_coeli",
+                "true_north_lunar_node", "mean_north_lunar_node",
                 "mean_lilith", "true_lilith"
             ],
             houses=[
