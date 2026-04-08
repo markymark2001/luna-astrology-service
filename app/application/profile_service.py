@@ -71,7 +71,8 @@ class ProfileService:
             },
             "transits": {
                 "date": transits.date.isoformat(),
-                "planets": transits.planets
+                "planets": transits.planets,
+                "points": transits.points,
             }
         }
 

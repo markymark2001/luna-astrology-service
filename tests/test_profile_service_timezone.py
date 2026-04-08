@@ -37,6 +37,7 @@ class FakeProvider:
         return SimpleNamespace(
             date=transit_date,
             planets={},
+            points={"true_north_lunar_node": {"name": "True_North_Lunar_Node"}},
             aspects_to_natal=[],
             current_sky_aspects=[],
         )
@@ -107,3 +108,12 @@ def test_generate_profile_includes_chart_system_metadata():
     result = service.generate_profile(_birth_data("America/New_York"))
 
     assert result["chart_system"]["id"] == "western_tropical_placidus"
+
+
+def test_generate_profile_includes_transit_points():
+    provider = FakeProvider()
+    service = ProfileService(provider=provider)
+
+    result = service.generate_profile(_birth_data("America/New_York"))
+
+    assert result["transits"]["points"]["true_north_lunar_node"]["name"] == "True_North_Lunar_Node"

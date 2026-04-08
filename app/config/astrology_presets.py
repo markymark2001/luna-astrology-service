@@ -75,9 +75,13 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
         return AstrologyConfig(
             planets=[
                 "sun", "moon", "mercury", "venus", "mars",
-                "jupiter", "saturn", "uranus", "neptune", "pluto"
+                "jupiter", "saturn", "uranus", "neptune", "pluto",
+                "chiron",
             ],
-            points=["ascendant", "medium_coeli", "true_north_lunar_node"],
+            points=[
+                "ascendant", "medium_coeli",
+                "true_north_lunar_node", "true_south_lunar_node",
+            ],
             houses=[
                 "first_house", "second_house", "third_house", "fourth_house",
                 "fifth_house", "sixth_house", "seventh_house", "eighth_house",
@@ -86,7 +90,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             natal_orb=4.0,
             transit_orb=4.0,
             synastry_orb=8.0,
-            description="Core configuration: 10 planets, 2 points, 12 houses, balanced orbs (LLM-optimized)"
+            description="Core configuration: 11 bodies, 4 points, 12 houses, balanced orbs (LLM-optimized)"
         )
 
     elif level == DetailLevel.ESSENTIAL:
@@ -100,7 +104,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             points=[
                 "ascendant", "medium_coeli",
                 "descendant", "imum_coeli",
-                "true_north_lunar_node"  # North Node
+                "true_north_lunar_node", "true_south_lunar_node",
             ],
             houses=[
                 "first_house", "second_house", "third_house", "fourth_house",
@@ -110,7 +114,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             natal_orb=6.0,
             transit_orb=6.0,
             synastry_orb=8.0,
-            description="Essential configuration: 11 bodies, 5 points, 11 houses, wider orbs"
+            description="Essential configuration: 11 bodies, 6 points, 11 houses, wider orbs"
         )
 
     elif level == DetailLevel.COMPREHENSIVE:
@@ -125,6 +129,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
                 "ascendant", "medium_coeli",
                 "descendant", "imum_coeli",
                 "true_north_lunar_node", "mean_north_lunar_node",
+                "true_south_lunar_node", "mean_south_lunar_node",
                 "mean_lilith", "true_lilith"
             ],
             houses=[
@@ -135,7 +140,7 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
             natal_orb=8.0,
             transit_orb=8.0,
             synastry_orb=8.0,
-            description="Comprehensive configuration: 13 bodies, 6 points, all 12 houses, wide orbs"
+            description="Comprehensive configuration: 11 bodies, 10 points, all 12 houses, wide orbs"
         )
 
     else:

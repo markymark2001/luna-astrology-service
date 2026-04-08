@@ -6,15 +6,17 @@ from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
 
-def test_core_preset_includes_north_node_in_points():
-    """CORE profiles should request the actual Kerykeion North Node field."""
+def test_core_preset_includes_nodes_and_chiron():
+    """CORE profiles should request both node fields and Chiron."""
     config = get_preset(DetailLevel.CORE)
 
     assert "true_north_lunar_node" in config.points
+    assert "true_south_lunar_node" in config.points
+    assert "chiron" in config.planets
 
 
-def test_core_provider_extracts_north_node_into_points():
-    """CORE chart payloads should surface North Node in the points mapping."""
+def test_core_provider_extracts_nodes_into_points_without_duplication():
+    """CORE chart payloads should surface nodes in points without duplicating them."""
     provider = KerykeionProvider(
         config=get_preset(DetailLevel.CORE),
         chart_system=DEFAULT_CHART_SYSTEM,
@@ -34,3 +36,9 @@ def test_core_provider_extracts_north_node_into_points():
     )
 
     assert "true_north_lunar_node" in chart.points
+    assert "true_south_lunar_node" in chart.points
+    assert "chiron" in chart.planets
+    assert "ascendant" not in chart.planets
+    assert "medium_coeli" not in chart.planets
+    assert "true_north_lunar_node" not in chart.planets
+    assert "true_south_lunar_node" not in chart.planets

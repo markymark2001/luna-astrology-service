@@ -16,14 +16,39 @@ MAJOR_ASPECTS = {"conjunction", "opposition", "square", "trine", "sextile"}
 
 # Bodies to exclude (redundant opposites and secondary points)
 EXCLUDED_BODIES = {
-    # Redundant opposites (always opposite their counterpart)
-    "descendant", "imum_coeli", "true_south_lunar_node",
-    # Secondary/less essential (Chiron kept for psychological astrology)
+    # Redundant opposite angles
+    "descendant", "imum_coeli",
+    # Secondary/less essential
     "mean_lilith",
 }
 
 # Outer planets (for filtering generational aspects)
 OUTER_PLANETS = {"uranus", "neptune", "pluto"}
+
+BODY_DISPLAY_NAMES = {
+    "medium_coeli": "Midheaven",
+    "imum_coeli": "Imum Coeli",
+    "true_north_lunar_node": "North Node",
+    "mean_north_lunar_node": "North Node",
+    "true_south_lunar_node": "South Node",
+    "mean_south_lunar_node": "South Node",
+}
+
+
+def _normalize_body_key(name: Any) -> str:
+    """Normalize provider body names to a stable snake_case key."""
+    return str(name).strip().lower().replace(" ", "_")
+
+
+def _format_body_name(name: Any) -> str:
+    """Humanize provider body names for compact prompt text."""
+    raw_name = str(name).strip()
+    normalized = _normalize_body_key(raw_name)
+    if normalized in BODY_DISPLAY_NAMES:
+        return BODY_DISPLAY_NAMES[normalized]
+    if "_" not in raw_name:
+        return raw_name
+    return " ".join(part.capitalize() for part in normalized.split("_"))
 
 
 def _chart_system_header(data: dict[str, Any]) -> list[str]:
@@ -66,8 +91,8 @@ def filter_aspects(aspects: list[dict], filter_generational: bool = True) -> lis
 
     Filtering rules:
     1. Major aspects only (conjunction, opposition, square, trine, sextile)
-    2. Exclude redundant opposite points (Descendant, IC, South Node)
-    3. Exclude secondary bodies (Mean_Lilith, Chiron)
+    2. Exclude redundant opposite angles (Descendant, IC)
+    3. Exclude secondary bodies (Mean_Lilith)
     4. Optionally exclude generational outer-to-outer aspects (Uranus-Neptune-Pluto)
 
     NO orb filtering - all orbs included so LLM can assess aspect strength.
@@ -82,8 +107,8 @@ def filter_aspects(aspects: list[dict], filter_generational: bool = True) -> lis
     filtered = []
     for aspect in aspects:
         aspect_name = aspect.get("aspect", "").lower()
-        p1 = aspect.get("p1_name", "").lower().replace(" ", "_")
-        p2 = aspect.get("p2_name", "").lower().replace(" ", "_")
+        p1 = _normalize_body_key(aspect.get("p1_name", ""))
+        p2 = _normalize_body_key(aspect.get("p2_name", ""))
 
         # Skip non-major aspects
         if aspect_name not in MAJOR_ASPECTS:
@@ -137,7 +162,7 @@ def format_planet(planet: dict[str, Any]) -> str:
     Returns:
         Formatted string like "Sun in Aries 15 deg (H1)" or "Mercury in Pisces 8 deg (H12, Rx)"
     """
-    name = planet.get("name", "Unknown")
+    name = _format_body_name(planet.get("name", "Unknown"))
     sign = planet.get("sign", "Unknown")
     position = planet.get("position", 0)
     house = planet.get("house")
@@ -170,8 +195,8 @@ def format_aspect(aspect: dict[str, Any], prefix1: str = "", prefix2: str = "") 
     Returns:
         Formatted string like "Sun conjunct Moon (orb 2.3)"
     """
-    p1 = aspect.get("p1_name", "Unknown")
-    p2 = aspect.get("p2_name", "Unknown")
+    p1 = _format_body_name(aspect.get("p1_name", "Unknown"))
+    p2 = _format_body_name(aspect.get("p2_name", "Unknown"))
     aspect_type = aspect.get("aspect", "aspect").lower()
     orbit = aspect.get("orbit", 0)
 
@@ -212,27 +237,27 @@ def _find_natal_house(abs_pos: float, natal_houses: dict[str, Any]) -> int | Non
     return cusps[-1][0]
 
 
-def _format_transit_planet(planet_data: dict[str, Any], natal_houses: dict[str, Any]) -> str:
-    """Format a transit planet with corrected natal house placement.
+def _format_transit_body(body_data: dict[str, Any], natal_houses: dict[str, Any]) -> str:
+    """Format a transit body with corrected natal house placement.
 
     If abs_pos and natal houses are available, computes the correct natal house.
     Otherwise strips the house entirely (better none than wrong).
 
     Args:
-        planet_data: Transit planet data dict
+        body_data: Transit body data dict
         natal_houses: Natal chart houses dict
 
     Returns:
-        Formatted planet string with corrected house
+        Formatted body string with corrected house
     """
-    abs_pos = planet_data.get("abs_pos")
+    abs_pos = body_data.get("abs_pos")
     if abs_pos is not None and natal_houses:
         natal_house = _find_natal_house(float(abs_pos), natal_houses)
         if natal_house is not None:
-            corrected = {**planet_data, "house": natal_house}
+            corrected = {**body_data, "house": natal_house}
             return format_planet(corrected)
     # Strip house entirely — better no house than wrong house
-    stripped = {**planet_data, "house": None}
+    stripped = {**body_data, "house": None}
     return format_planet(stripped)
 
 
@@ -335,11 +360,15 @@ def format_natal_chart(chart_data: dict[str, Any]) -> str:
     natal_houses = natal_chart.get("houses", {})
     transits = chart_data.get("transits", {})
     transit_planets = transits.get("planets", {})
-    if transit_planets:
+    transit_points = transits.get("points", {})
+    if transit_planets or transit_points:
         lines.append("CURRENT TRANSITS")
         for planet_key, planet_data in transit_planets.items():
             if isinstance(planet_data, dict) and "name" in planet_data:
-                lines.append(_format_transit_planet(planet_data, natal_houses))
+                lines.append(_format_transit_body(planet_data, natal_houses))
+        for point_key, point_data in transit_points.items():
+            if isinstance(point_data, dict) and "name" in point_data:
+                lines.append(_format_transit_body(point_data, natal_houses))
         lines.append("")
 
     lines.extend(_format_transit_to_natal_aspects(chart_data))

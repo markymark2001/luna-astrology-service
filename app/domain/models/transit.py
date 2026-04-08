@@ -17,5 +17,6 @@ class Transit(BaseModel):
 
     date: datetime
     planets: dict[str, Any]
+    points: dict[str, Any]
     aspects_to_natal: list[Any]
     current_sky_aspects: list[Any]

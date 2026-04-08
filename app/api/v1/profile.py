@@ -29,10 +29,10 @@ async def get_profile(
     - PLANETS: Sun in Aries 15 deg (H1)
     - HOUSES: 1st House: Aries
     - NATAL ASPECTS: Sun conjunct Mercury (orb 1.2)
-    - CURRENT TRANSITS: Transit Sun in Capricorn 25 deg
+    - CURRENT TRANSITS: Sun in Capricorn 25 deg, North Node in Aquarius 15 deg
     - TRANSIT ASPECTS TO NATAL: Transit Mars opposite natal Sun (orb 2.3)
 
-    Note: Uses CORE preset configuration (10 planets, 2 points, 6 houses, 4° orbs).
+    Note: Uses CORE preset configuration (11 bodies, 4 points, 12 houses, 4° orbs).
     """
     return await compute_runtime.run(
         "profile_compact",

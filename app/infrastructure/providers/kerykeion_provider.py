@@ -128,7 +128,7 @@ class KerykeionProvider(IAstrologyProvider):
             natal_chart = NatalChart(
                 birth_data=birth_data,
                 chart_system=self.chart_factory.metadata(),
-                planets={**planets, **points, "birth_data": birth_metadata},
+                planets={**planets, "birth_data": birth_metadata},
                 houses=houses,
                 points=points,
                 aspects=aspects,
@@ -237,6 +237,7 @@ class KerykeionProvider(IAstrologyProvider):
 
             # Extract transit planets
             transit_planets = extract_celestial_objects(transit_subject, self.config.planets)
+            transit_points = extract_celestial_objects(transit_subject, self.config.points)
 
             # Calculate transit-to-natal aspects
             natal_subject = natal_chart.provider_data
@@ -254,6 +255,7 @@ class KerykeionProvider(IAstrologyProvider):
             transit = Transit(
                 date=transit_local,
                 planets=transit_planets,
+                points=transit_points,
                 aspects_to_natal=transit_to_natal_aspects,
                 current_sky_aspects=current_sky_aspects
             )
