@@ -315,7 +315,7 @@ class AstrologyComputeRuntime:
         total_ms: float,
     ) -> None:
         try:
-            with sentry_sdk.push_scope() as scope:
+            with sentry_sdk.new_scope() as scope:
                 scope.set_tag("error_type", error_type)
                 scope.set_tag("service_role", "astrology-service")
                 scope.set_tag("astrology_task", task_name)

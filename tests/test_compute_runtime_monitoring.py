@@ -56,7 +56,7 @@ def test_queue_pressure_warning_captures_sentry_message(monkeypatch) -> None:
         def set_context(self, key, value):
             return None
 
-    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.push_scope", _Scope)
+    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.new_scope", _Scope)
     monkeypatch.setattr(
         "app.infrastructure.compute_runtime.sentry_sdk.capture_message",
         lambda message, level="info": messages.append((message, level)),
@@ -97,7 +97,7 @@ def test_slow_task_warning_captures_sentry_message(monkeypatch) -> None:
         def set_context(self, key, value):
             return None
 
-    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.push_scope", _Scope)
+    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.new_scope", _Scope)
     monkeypatch.setattr(
         "app.infrastructure.compute_runtime.sentry_sdk.capture_message",
         lambda message, level="info": messages.append((message, level)),
@@ -138,7 +138,7 @@ def test_warning_cooldown_suppresses_duplicate_task_signal(monkeypatch) -> None:
         def set_context(self, key, value):
             return None
 
-    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.push_scope", _Scope)
+    monkeypatch.setattr("app.infrastructure.compute_runtime.sentry_sdk.new_scope", _Scope)
     monkeypatch.setattr(
         "app.infrastructure.compute_runtime.sentry_sdk.capture_message",
         lambda message, level="info": messages.append((message, level)),
