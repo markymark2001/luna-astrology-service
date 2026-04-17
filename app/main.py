@@ -34,23 +34,38 @@ from app.infrastructure.compute_runtime import create_compute_runtime
 logger = logging.getLogger(__name__)
 SERVICE_ROLE = "astrology-service"
 
-# Initialize Sentry for error tracking (production only)
-if settings.env == "prod" and settings.sentry_dsn:
+def init_astrology_sentry(
+    *,
+    dsn: str,
+    environment: str,
+    release: str | None,
+) -> None:
+    """Initialize astrology-service Sentry with explicit issue ownership."""
     sentry_sdk.init(
-        dsn=settings.sentry_dsn,
-        environment=f"{settings.env}-astrology",
-        release=get_sentry_release("taia-astrology"),
+        dsn=dsn,
+        environment=environment,
+        release=release,
         traces_sample_rate=0.2,
         send_default_pii=False,
         integrations=[
             FastApiIntegration(
+                transaction_style="endpoint",
                 failed_request_status_codes={*range(500, 599)},
             ),
             LoggingIntegration(
                 level=logging.INFO,
-                event_level=logging.ERROR,
+                event_level=None,
             ),
         ],
+    )
+
+
+# Initialize Sentry for error tracking (production only)
+if settings.env == "prod" and settings.sentry_dsn:
+    init_astrology_sentry(
+        dsn=settings.sentry_dsn,
+        environment=f"{settings.env}-astrology",
+        release=get_sentry_release("taia-astrology"),
     )
 
 
