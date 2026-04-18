@@ -10,7 +10,7 @@ from app.models.responses import PlacementsResponse
 router = APIRouter(prefix="/astrology", tags=["Astrology Profile"])
 
 
-# Called by: backend/app/infrastructure/providers/astrology_provider.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/profile",
     status_code=status.HTTP_200_OK,
@@ -41,7 +41,7 @@ async def get_profile(
     )
 
 
-# Called by: backend/app/infrastructure/ai/tools/definitions/natal_chart_tool.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/profile/lookup",
     status_code=status.HTTP_200_OK,
@@ -66,7 +66,7 @@ async def get_lookup_profile(
     )
 
 
-# Called by: backend/app/infrastructure/proactive/astrology_context.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/profile/monthly",
     status_code=status.HTTP_200_OK,
@@ -86,7 +86,7 @@ async def get_monthly_profile(
     )
 
 
-# Called by: backend/app/api/v1/profile.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/profile/placements",
     status_code=status.HTTP_200_OK,

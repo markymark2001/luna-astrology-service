@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -14,16 +14,35 @@ class Settings(BaseSettings):
     # Server
     host: str = "0.0.0.0"
     port: int = 8001
-    compute_pool_size: int = Field(1, alias="ASTROLOGY_COMPUTE_POOL_SIZE", ge=1)
+    compute_pool_size: int = Field(
+        1,
+        validation_alias="ASTROLOGY_COMPUTE_POOL_SIZE",
+        ge=1,
+    )
 
     # Sentry
     sentry_dsn: str = ""
+    internal_service_token: str = Field(
+        "",
+        validation_alias="ASTROLOGY_SERVICE_TOKEN",
+    )
+
+    @model_validator(mode="after")
+    def validate_internal_service_auth(self) -> "Settings":
+        """Require internal service auth in production."""
+        if self.env == "prod" and not self.internal_service_token:
+            raise ValueError(
+                "Missing required environment variables for production: "
+                "ASTROLOGY_SERVICE_TOKEN"
+            )
+        return self
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
-        extra="allow"
+        extra="allow",
+        populate_by_name=True,
     )
 
 

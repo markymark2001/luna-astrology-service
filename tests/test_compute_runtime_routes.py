@@ -37,11 +37,6 @@ TRANSIT_PERIOD_PAYLOAD = {
     "end_date": "2026-01-31",
 }
 
-PLANET_HOUSE_PAYLOAD = {
-    **BASE_BIRTH_DATA,
-    "planet": "venus",
-}
-
 CHART_SYSTEM_RESULT = {
     "id": "western_tropical_placidus",
     "zodiac_type": "Tropical",
@@ -62,14 +57,6 @@ PLACEMENTS_RESULT = {
     ],
     "chart_system": CHART_SYSTEM_RESULT,
 }
-
-PLANET_HOUSE_RESULT = {
-    "planet": "venus",
-    "house": 7,
-    "sign": "Taurus",
-    "chart_system": CHART_SYSTEM_RESULT,
-}
-
 
 class FakeRuntime:
     """Async runtime stub that records calls."""
@@ -96,7 +83,6 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
             "placements": PLACEMENTS_RESULT,
             "synastry_compact": "synastry",
             "transit_period_compact": "transit",
-            "planet_house": PLANET_HOUSE_RESULT,
         }
     )
     app.state.astrology_compute_runtime = fake_runtime
@@ -109,7 +95,6 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
         ("/api/v1/astrology/profile/placements", BASE_BIRTH_DATA, "placements"),
         ("/api/v1/astrology/synastry", SYNASTRY_PAYLOAD, "synastry_compact"),
         ("/api/v1/astrology/transits/period", TRANSIT_PERIOD_PAYLOAD, "transit_period_compact"),
-        ("/api/v1/astrology/planet-house", PLANET_HOUSE_PAYLOAD, "planet_house"),
     ]
 
     for route, payload, task_name in routes:
@@ -117,6 +102,12 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
         assert response.status_code == 200, route
         assert fake_runtime.calls[-1][0] == task_name
         assert fake_runtime.calls[-1][2] == route
+
+    removed_route = client.post(
+        "/api/v1/astrology/planet-house",
+        json={**BASE_BIRTH_DATA, "planet": "venus"},
+    )
+    assert removed_route.status_code == 404
 
 def test_lifespan_sets_astrology_service_role(monkeypatch):
     fake_runtime = FakeRuntime({})

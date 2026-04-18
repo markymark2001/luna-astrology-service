@@ -17,7 +17,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 
 from app.api.v1 import api_router
 from app.config.sentry_release import get_sentry_release
-from app.config.settings import settings
+from app.config.settings import Settings, settings
 from app.core.error_handlers import (
     handle_astrology_service_error,
     handle_chart_calculation_error,
@@ -33,6 +33,7 @@ from app.infrastructure.compute_runtime import create_compute_runtime
 
 logger = logging.getLogger(__name__)
 SERVICE_ROLE = "astrology-service"
+
 
 def init_astrology_sentry(
     *,
@@ -69,79 +70,88 @@ if settings.env == "prod" and settings.sentry_dsn:
     )
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Initialize and clean up the shared astrology compute runtime."""
-    logger.info("🚀 Starting %s runtime...", SERVICE_ROLE)
-    app.state.service_role = SERVICE_ROLE
-    sentry_sdk.set_tag("service_role", SERVICE_ROLE)
-    app.state.astrology_compute_runtime = create_compute_runtime(settings)
-    try:
-        logger.info("✅ %s runtime started successfully", SERVICE_ROLE)
-        yield
-    finally:
-        logger.info("🛑 Shutting down %s runtime...", SERVICE_ROLE)
-        app.state.astrology_compute_runtime.shutdown()
-        logger.info("✅ %s runtime shutdown complete", SERVICE_ROLE)
+def _create_lifespan(service_settings: Settings):
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        """Initialize and clean up the shared astrology compute runtime."""
+        logger.info("Starting %s runtime...", SERVICE_ROLE)
+        app.state.service_role = SERVICE_ROLE
+        app.state.settings = service_settings
+        sentry_sdk.set_tag("service_role", SERVICE_ROLE)
+        app.state.astrology_compute_runtime = create_compute_runtime(service_settings)
+        try:
+            logger.info("%s runtime started successfully", SERVICE_ROLE)
+            yield
+        finally:
+            logger.info("Shutting down %s runtime...", SERVICE_ROLE)
+            app.state.astrology_compute_runtime.shutdown()
+            logger.info("%s runtime shutdown complete", SERVICE_ROLE)
+
+    return lifespan
 
 
-# Create FastAPI application
-app = FastAPI(
-    title=settings.app_name,
-    version=settings.app_version,
-    description="Astrology calculation service with hexagonal architecture (Internal Service)",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    lifespan=lifespan,
-)
-
-
-# Register exception handlers
-app.add_exception_handler(InvalidBirthDataException, handle_invalid_birth_data)
-app.add_exception_handler(ChartCalculationException, handle_chart_calculation_error)
-app.add_exception_handler(AstrologyServiceException, handle_astrology_service_error)
-app.add_exception_handler(Exception, handle_generic_exception)
-
-
-@app.get(
-    "/health",
-    status_code=status.HTTP_200_OK,
-    tags=["Health"],
-    summary="Health check",
-    description="Check if the service is running"
-)
-async def health_check():
-    """Health check endpoint for Railway and monitoring."""
-    return JSONResponse(
-        status_code=status.HTTP_200_OK,
-        content={
-            "status": "healthy",
-            "service": settings.app_name,
-            "version": settings.app_version,
-            "environment": settings.env
-        }
+def create_app(service_settings: Settings) -> FastAPI:
+    """Create the astrology-service FastAPI application."""
+    docs_url = None if service_settings.env == "prod" else "/docs"
+    redoc_url = None if service_settings.env == "prod" else "/redoc"
+    openapi_url = None if service_settings.env == "prod" else "/openapi.json"
+    app = FastAPI(
+        title=service_settings.app_name,
+        version=service_settings.app_version,
+        description="Astrology calculation service with hexagonal architecture (Internal Service)",
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
+        lifespan=_create_lifespan(service_settings),
     )
+    app.state.settings = service_settings
+
+    app.add_exception_handler(InvalidBirthDataException, handle_invalid_birth_data)
+    app.add_exception_handler(ChartCalculationException, handle_chart_calculation_error)
+    app.add_exception_handler(AstrologyServiceException, handle_astrology_service_error)
+    app.add_exception_handler(Exception, handle_generic_exception)
+
+    @app.get(
+        "/health",
+        status_code=status.HTTP_200_OK,
+        tags=["Health"],
+        summary="Health check",
+        description="Check if the service is running",
+    )
+    async def health_check():
+        """Health check endpoint for Railway and monitoring."""
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={
+                "status": "healthy",
+                "service": service_settings.app_name,
+                "version": service_settings.app_version,
+                "environment": service_settings.env,
+            },
+        )
+
+    @app.get(
+        "/",
+        status_code=status.HTTP_200_OK,
+        tags=["Root"],
+        summary="API root",
+        description="Get API information",
+    )
+    async def root():
+        """Root endpoint with API information."""
+        return {
+            "service": service_settings.app_name,
+            "version": service_settings.app_version,
+            "docs": docs_url,
+            "health": "/health",
+            "api": "/api/v1",
+        }
+
+    app.include_router(api_router, prefix="/api")
+    return app
 
 
-@app.get(
-    "/",
-    status_code=status.HTTP_200_OK,
-    tags=["Root"],
-    summary="API root",
-    description="Get API information"
-)
-async def root():
-    """Root endpoint with API information."""
-    return {
-        "service": settings.app_name,
-        "version": settings.app_version,
-        "docs": "/docs",
-        "health": "/health",
-        "api": "/api/v1"
-    }
-
-
-app.include_router(api_router, prefix="/api")
+app = create_app(settings)
 
 
 if __name__ == "__main__":
@@ -151,5 +161,5 @@ if __name__ == "__main__":
         "app.main:app",
         host=settings.host,
         port=settings.port,
-        reload=settings.debug
+        reload=settings.debug,
     )

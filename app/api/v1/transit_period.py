@@ -9,7 +9,7 @@ from app.models.requests import TransitPeriodRequest
 router = APIRouter(prefix="/astrology", tags=["Astrology Transit Period"])
 
 
-# Called by: backend/app/infrastructure/ai/tools/definitions/transit_period_tool.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/transits/period",
     status_code=status.HTTP_200_OK,

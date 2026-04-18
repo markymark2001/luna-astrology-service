@@ -13,7 +13,6 @@ from typing import Any
 import sentry_sdk
 from fastapi import Request
 
-from app.application.chart_payloads import natal_chart_payload
 from app.application.compatibility_service import SynastryService
 from app.application.profile_service import ProfileService
 from app.application.transit_period_service import TransitPeriodService
@@ -27,25 +26,9 @@ from app.config.constants import (
 from app.config.settings import Settings, settings
 from app.core.exceptions import ChartCalculationException, InvalidBirthDataException
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
-from app.models.requests import PlanetHouseRequest, ProfileRequest, SynastryRequest, TransitPeriodRequest
+from app.models.requests import ProfileRequest, SynastryRequest, TransitPeriodRequest
 
 logger = logging.getLogger(__name__)
-
-# Kerykeion house name to number mapping
-HOUSE_NAME_TO_NUMBER = {
-    "First_House": 1,
-    "Second_House": 2,
-    "Third_House": 3,
-    "Fourth_House": 4,
-    "Fifth_House": 5,
-    "Sixth_House": 6,
-    "Seventh_House": 7,
-    "Eighth_House": 8,
-    "Ninth_House": 9,
-    "Tenth_House": 10,
-    "Eleventh_House": 11,
-    "Twelfth_House": 12,
-}
 
 _WORKER_SERVICES: dict[str, Any] | None = None
 
@@ -64,51 +47,6 @@ def _get_worker_services() -> dict[str, Any]:
             "transit_period": TransitPeriodService(provider=provider),
         }
     return _WORKER_SERVICES
-
-
-def _serialize_planet_house(payload: dict[str, Any]) -> dict[str, Any]:
-    """Return planet house data using natal chart only."""
-    request = PlanetHouseRequest.model_validate(payload)
-    profile_service: ProfileService = _get_worker_services()["profile"]
-    natal_chart = profile_service.provider.calculate_natal_chart(request)
-    natal_payload = natal_chart_payload(natal_chart)
-    planets = natal_payload["planets"]
-    planet_name = request.planet.lower()
-    planet_data = planets.get(planet_name)
-    if not planet_data:
-        raise ValueError(
-            f"Planet '{request.planet}' not found in natal chart. Available planets: {list(planets.keys())}"
-        )
-
-    house = planet_data.get("house")
-    sign = planet_data.get("sign")
-    if house is None:
-        raise RuntimeError(f"House position not available for planet '{request.planet}'")
-    if sign is None:
-        raise RuntimeError(f"Sign not available for planet '{request.planet}'")
-
-    house_int = None
-    if isinstance(house, int):
-        house_int = house
-    elif isinstance(house, str):
-        house_int = HOUSE_NAME_TO_NUMBER.get(house)
-        if house_int is None:
-            try:
-                house_int = int(house)
-            except ValueError:
-                house_int = None
-
-    if house_int is None or not 1 <= house_int <= 12:
-        raise RuntimeError(
-            f"Invalid house value '{house}' - could not convert to house number (1-12)"
-        )
-
-    return {
-        "planet": planet_name,
-        "house": house_int,
-        "sign": sign,
-        "chart_system": natal_chart.chart_system,
-    }
 
 
 def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: float) -> dict[str, Any]:
@@ -144,8 +82,6 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
                 request.start_date,
                 request.end_date,
             )
-        elif task_name == "planet_house":
-            result = _serialize_planet_house(payload)
         else:
             raise ValueError(f"Unknown astrology compute task: {task_name}")
 

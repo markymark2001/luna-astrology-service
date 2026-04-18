@@ -15,15 +15,6 @@ class ChartSystemResponse(BaseModel):
     sidereal_mode: str | None = Field(None, description="Sidereal mode when sidereal charts are used")
 
 
-class PlanetHouseResponse(BaseModel):
-    """Response model for planet house position."""
-
-    planet: str = Field(..., description="Planet name")
-    house: int = Field(..., description="House number (1-12)")
-    sign: str = Field(..., description="Zodiac sign the planet is in")
-    chart_system: ChartSystemResponse = Field(..., description="Chart-system metadata")
-
-
 class PlacementItem(BaseModel):
     """A single planetary or point placement in the natal chart."""
 

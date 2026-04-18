@@ -9,7 +9,7 @@ from app.models.requests import SynastryRequest
 router = APIRouter(prefix="/astrology", tags=["Synastry"])
 
 
-# Called by: backend/app/infrastructure/ai/tools/definitions/synastry_tool.py
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
     "/synastry",
     status_code=status.HTTP_200_OK,
