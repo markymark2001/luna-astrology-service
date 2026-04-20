@@ -16,10 +16,13 @@ async def verify_internal_service_token(
         alias=INTERNAL_SERVICE_TOKEN_HEADER,
     ),
 ) -> None:
-    """Require the configured backend-to-service token when one is set."""
+    """Require the configured backend-to-service token and fail closed if absent."""
     expected_token = getattr(request.app.state.settings, "internal_service_token", "")
     if not expected_token:
-        return
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Internal service authentication is not configured",
+        )
 
     if not internal_service_token or not hmac.compare_digest(
         internal_service_token,

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from fastapi.testclient import TestClient
 
-from app.main import app
+from app.config.settings import Settings
+from app.main import app, create_app
 
 BASE_BIRTH_DATA = {
     "year": 1990,
@@ -74,7 +75,7 @@ class FakeRuntime:
         self.shutdown_called = True
 
 
-def test_cpu_bound_routes_use_shared_compute_runtime():
+def test_cpu_bound_routes_use_shared_compute_runtime(monkeypatch):
     fake_runtime = FakeRuntime(
         {
             "profile_compact": "profile",
@@ -85,8 +86,9 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
             "transit_period_compact": "transit",
         }
     )
-    app.state.astrology_compute_runtime = fake_runtime
-    client = TestClient(app)
+    monkeypatch.setattr("app.main.create_compute_runtime", lambda settings: fake_runtime)
+    test_app = create_app(Settings(env="dev", internal_service_token="internal-token"))
+    auth_headers = {"X-Astrology-Service-Token": "internal-token"}
 
     routes = [
         ("/api/v1/astrology/profile", BASE_BIRTH_DATA, "profile_compact"),
@@ -97,17 +99,19 @@ def test_cpu_bound_routes_use_shared_compute_runtime():
         ("/api/v1/astrology/transits/period", TRANSIT_PERIOD_PAYLOAD, "transit_period_compact"),
     ]
 
-    for route, payload, task_name in routes:
-        response = client.post(route, json=payload)
-        assert response.status_code == 200, route
-        assert fake_runtime.calls[-1][0] == task_name
-        assert fake_runtime.calls[-1][2] == route
+    with TestClient(test_app) as client:
+        for route, payload, task_name in routes:
+            response = client.post(route, json=payload, headers=auth_headers)
+            assert response.status_code == 200, route
+            assert fake_runtime.calls[-1][0] == task_name
+            assert fake_runtime.calls[-1][2] == route
 
-    removed_route = client.post(
-        "/api/v1/astrology/planet-house",
-        json={**BASE_BIRTH_DATA, "planet": "venus"},
-    )
-    assert removed_route.status_code == 404
+        removed_route = client.post(
+            "/api/v1/astrology/planet-house",
+            json={**BASE_BIRTH_DATA, "planet": "venus"},
+            headers=auth_headers,
+        )
+        assert removed_route.status_code == 404
 
 def test_lifespan_sets_astrology_service_role(monkeypatch):
     fake_runtime = FakeRuntime({})
