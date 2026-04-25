@@ -40,3 +40,8 @@ def test_prod_requires_internal_service_token(
 ) -> None:
     with pytest.raises(ValueError, match="ASTROLOGY_SERVICE_TOKEN"):
         Settings(env="prod", internal_service_token="")
+
+
+def test_dev_requires_internal_service_token() -> None:
+    with pytest.raises(ValueError, match="ASTROLOGY_SERVICE_TOKEN"):
+        Settings(env="dev", internal_service_token="")

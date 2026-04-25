@@ -52,7 +52,7 @@ def test_create_app_keeps_docs_in_dev(monkeypatch) -> None:
     fake_runtime = FakeRuntime()
     monkeypatch.setattr("app.main.create_compute_runtime", lambda settings: fake_runtime)
 
-    app = create_app(Settings(env="dev", internal_service_token=""))
+    app = create_app(Settings(env="dev", internal_service_token="internal-token"))
 
     assert app.docs_url == "/docs"
     assert app.redoc_url == "/redoc"
@@ -80,13 +80,20 @@ def test_astrology_routes_require_internal_service_token_in_prod(monkeypatch) ->
     assert fake_runtime.calls[-1][0] == "profile_compact"
 
 
-def test_astrology_routes_fail_closed_when_internal_token_is_unset(monkeypatch) -> None:
+def test_astrology_routes_require_internal_service_token_in_dev(monkeypatch) -> None:
     fake_runtime = FakeRuntime()
     monkeypatch.setattr("app.main.create_compute_runtime", lambda settings: fake_runtime)
-    app = create_app(Settings(env="dev", internal_service_token=""))
+    app = create_app(Settings(env="dev", internal_service_token="internal-token"))
 
     with TestClient(app) as client:
-        response = client.post("/api/v1/astrology/profile", json=BASE_BIRTH_DATA)
+        unauthorized = client.post("/api/v1/astrology/profile", json=BASE_BIRTH_DATA)
+        assert unauthorized.status_code == 401
 
-    assert response.status_code == 503
-    assert fake_runtime.calls == []
+        authorized = client.post(
+            "/api/v1/astrology/profile",
+            json=BASE_BIRTH_DATA,
+            headers={"X-Astrology-Service-Token": "internal-token"},
+        )
+        assert authorized.status_code == 200
+
+    assert fake_runtime.calls[-1][0] == "profile_compact"

@@ -29,10 +29,10 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_internal_service_auth(self) -> "Settings":
-        """Require internal service auth in production."""
-        if self.env == "prod" and not self.internal_service_token:
+        """Require internal service auth in every environment."""
+        if not self.internal_service_token:
             raise ValueError(
-                "Missing required environment variables for production: "
+                "Missing required environment variables: "
                 "ASTROLOGY_SERVICE_TOKEN"
             )
         return self
