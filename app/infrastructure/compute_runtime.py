@@ -233,8 +233,11 @@ class AstrologyComputeRuntime:
     def _warning_allowed(self, warning_type: str, task_name: str) -> bool:
         key = (warning_type, task_name)
         now = monotonic()
-        last_sent = self._last_warning_ts.get(key, 0.0)
-        if now - last_sent < ASTROLOGY_COMPUTE_WARNING_COOLDOWN_SECONDS:
+        last_sent = self._last_warning_ts.get(key)
+        if (
+            last_sent is not None
+            and now - last_sent < ASTROLOGY_COMPUTE_WARNING_COOLDOWN_SECONDS
+        ):
             return False
         self._last_warning_ts[key] = now
         return True
