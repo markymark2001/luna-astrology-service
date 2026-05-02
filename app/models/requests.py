@@ -25,6 +25,7 @@ class ProfileRequest(BirthData):
     """
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "year": 1990,
@@ -55,6 +56,7 @@ class TransitPeriodRequest(BirthData):
     """
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "year": 1990,
@@ -87,6 +89,7 @@ class SynastryRequest(BaseModel):
     """Request model for synastry analysis (relationship compatibility)."""
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "person1": {

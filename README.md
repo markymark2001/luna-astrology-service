@@ -1,249 +1,57 @@
 # Luna Astrology Service
 
-A FastAPI-based astrology calculation service powered by [Kerykeion](https://github.com/g-battaglia/kerykeion). This service provides REST API endpoints for calculating natal birth charts with planetary positions, house cusps, and aspects.
+FastAPI astrology compute service powered by
+[Kerykeion](https://github.com/g-battaglia/kerykeion). This service is kept as a
+separate runtime and public sync target to preserve the AGPL boundary.
 
-## Features
+## Runtime Boundary
 
-- **Natal Chart Calculation**: Calculate complete birth charts with planetary positions, houses, and aspects
-- **RESTful API**: Clean, versioned API design (v1)
-- **Type Safety**: Full Pydantic validation for requests and responses
-- **Extensible Architecture**: Designed to support future features (synastry, transits, progressions)
-- **Production Ready**: Railway deployment with health checks
+The main backend must treat this service as an HTTP dependency. Do not add Python
+cross-imports between `backend/` and `astrology-service/`.
 
-## Tech Stack
+Each endpoint under `app/api/v1/` must include a caller comment:
 
-- **FastAPI**: Modern Python web framework
-- **Kerykeion**: Astrology calculations library
-- **Pydantic**: Data validation and settings management
-- **Uvicorn**: ASGI server
-
-## API Documentation
-
-### Endpoints
-
-#### Health Check
-```
-GET /health
+```python
+# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 ```
 
-Returns service health status.
+The repository contract checker verifies endpoint ownership and caller count.
+See [../docs/architecture.md](../docs/architecture.md) and
+[../docs/contracts.md](../docs/contracts.md).
 
-**Response:**
-```json
-{
-  "status": "healthy",
-  "service": "Luna Astrology Service",
-  "version": "1.0.0",
-  "environment": "dev"
-}
-```
+## Current API Surface
 
-#### Calculate Natal Chart
-```
-POST /api/v1/natal/calculate
-```
+All v1 routes are mounted under `/api/v1` and require the internal service token
+dependency configured in `app/api/v1/__init__.py`.
 
-Calculate a natal birth chart from birth data.
+- `POST /api/v1/astrology/profile`
+- `POST /api/v1/astrology/profile/lookup`
+- `POST /api/v1/astrology/profile/monthly`
+- `POST /api/v1/astrology/profile/placements`
+- `POST /api/v1/astrology/synastry`
+- `POST /api/v1/astrology/transits/period`
+- `GET /health`
 
-**Request Body:**
-```json
-{
-  "year": 1990,
-  "month": 3,
-  "day": 15,
-  "hour": 14,
-  "minute": 30,
-  "latitude": 40.7128,
-  "longitude": -74.0060,
-  "timezone": "America/New_York"
-}
-```
-
-**Response:**
-```json
-{
-  "planets": [
-    {
-      "name": "Sun",
-      "sign": "Pisces",
-      "degree": 24.5,
-      "absolute_degree": 354.5,
-      "house": 10,
-      "retrograde": false,
-      "element": "Water",
-      "quality": "Mutable"
-    }
-  ],
-  "houses": [
-    {
-      "number": 1,
-      "sign": "Gemini",
-      "degree": 15.2,
-      "absolute_degree": 75.2
-    }
-  ],
-  "aspects": [
-    {
-      "planet1": "Sun",
-      "planet2": "Moon",
-      "aspect_type": "trine",
-      "orb": 2.1,
-      "applying": true
-    }
-  ],
-  "ascendant": 75.2,
-  "midheaven": 345.8,
-  "chart_type": "Natal"
-}
-```
+Request models live in `app/models/requests.py`; response models live in
+`app/models/responses.py`.
 
 ## Local Development
 
-### Prerequisites
-
-- Python 3.10+
-- pip
-
-### Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone <repository-url>
-   cd luna-astrology-service
-   ```
-
-2. **Create virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Run the server:**
-   ```bash
-   uvicorn app.main:app --reload --port 8001
-   ```
-
-5. **Access the API:**
-   - API Root: http://localhost:8001
-   - Interactive Docs: http://localhost:8001/docs
-   - Alternative Docs: http://localhost:8001/redoc
-   - Health Check: http://localhost:8001/health
-
-### Testing with curl
+From the repository root, VSCode can launch the full stack through
+`Full Stack Development`. Direct service run:
 
 ```bash
-curl -X POST "http://localhost:8001/api/v1/natal/calculate" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "year": 1990,
-    "month": 3,
-    "day": 15,
-    "hour": 14,
-    "minute": 30,
-    "latitude": 40.7128,
-    "longitude": -74.0060,
-    "timezone": "America/New_York"
-  }'
+PYTHONPATH=astrology-service \
+.venv/bin/python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
 ```
 
-## Deployment
+Focused tests:
 
-### Railway
-
-This service is configured for Railway deployment.
-
-1. **Create Railway service:**
-   ```bash
-   railway init
-   ```
-
-2. **Set Config-as-Code path:**
-   ```text
-   /railway.astrology.toml
-   ```
-
-3. **Deploy:**
-   ```bash
-   railway up
-   ```
-
-4. **Configure environment variables:**
-   Set them in Railway service or shared environment variables.
-
-Railway will automatically:
-- Build from `Dockerfile.astrology`
-- Run the start command from `railway.astrology.toml`
-- Monitor health via `/health` endpoint
-
-### Environment Variables
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `ENV` | `dev` | Environment name |
-| `DEBUG` | `false` | Enable debug mode |
-| `PORT` | `8001` | Server port (Railway sets this automatically) |
-
-## Project Structure
-
+```bash
+PYTHONPATH=astrology-service .venv/bin/pytest astrology-service/tests/path/to/test.py -v
 ```
-luna-astrology-service/
-├── app/
-│   ├── main.py              # FastAPI application
-│   ├── api/
-│   │   └── v1/
-│   │       ├── natal.py     # Natal chart endpoints
-│   │       ├── synastry.py  # (Future) Compatibility
-│   │       ├── transits.py  # (Future) Transits
-│   │       └── progressions.py  # (Future) Progressions
-│   ├── services/
-│   │   └── kerykeion_service.py  # Kerykeion wrapper
-│   ├── models/
-│   │   ├── requests.py      # Request models
-│   │   └── responses.py     # Response models
-│   ├── config/
-│   │   └── settings.py      # Configuration
-│   └── core/
-│       └── exceptions.py    # Custom exceptions
-├── requirements.txt
-├── Procfile                 # Railway deployment
-├── railway.toml            # Railway configuration
-└── README.md
-```
-
-## Future Features
-
-The architecture is designed to support additional astrology features:
-
-- **Synastry**: Relationship compatibility analysis between two charts
-- **Transits**: Current planetary transits and their effects
-- **Progressions**: Secondary progressions for predictive astrology
-- **Solar Returns**: Annual solar return charts
-
-These will be added as new endpoints under `/api/v1/`.
 
 ## License
 
-This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0).
-
-This license is required due to the use of [Kerykeion](https://github.com/g-battaglia/kerykeion), which is also licensed under AGPL-3.0.
-
-**Source Code Availability:** This repository is automatically synced from the private Luna project to ensure AGPL compliance. All changes are publicly available.
-
-## Credits
-
-- **Kerykeion**: Astrology library by [Giacomo Battaglia](https://github.com/g-battaglia)
-- **FastAPI**: Modern Python web framework
-- **Luna**: Parent project
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## Support
-
-For issues or questions, please open an issue on GitHub.
+This service is AGPL-3.0 because it uses Kerykeion. It is automatically synced
+to the public astrology-service repository for source availability.

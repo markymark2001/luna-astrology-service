@@ -22,6 +22,7 @@ class BirthData(BaseModel):
     timezone: str | None = Field("Europe/London", description="IANA timezone (defaults to Europe/London)")
 
     model_config = ConfigDict(
+        extra="forbid",
         json_schema_extra={
             "example": {
                 "year": 1990,
