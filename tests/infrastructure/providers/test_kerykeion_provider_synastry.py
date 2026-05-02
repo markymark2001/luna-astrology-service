@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.config.astrology_presets import DEFAULT_CONFIG
+from app.config.astrology_presets import DetailLevel, get_preset
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
@@ -14,7 +14,10 @@ class TestKerykeionProviderSynastryScore:
     @pytest.fixture
     def provider(self) -> KerykeionProvider:
         """Create a KerykeionProvider instance."""
-        return KerykeionProvider(config=DEFAULT_CONFIG, chart_system=DEFAULT_CHART_SYSTEM)
+        return KerykeionProvider(
+            config=get_preset(DetailLevel.CORE),
+            chart_system=DEFAULT_CHART_SYSTEM,
+        )
 
     @pytest.fixture
     def person1_data(self) -> BirthData:

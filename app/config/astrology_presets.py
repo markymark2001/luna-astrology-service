@@ -146,7 +146,3 @@ def get_preset(level: DetailLevel) -> AstrologyConfig:
     else:
         # Fallback to core if unknown level
         return get_preset(DetailLevel.CORE)
-
-
-# Convenience: Default configuration (for backward compatibility)
-DEFAULT_CONFIG = get_preset(DetailLevel.CORE)

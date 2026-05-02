@@ -4,7 +4,7 @@ from datetime import date
 
 import pytest
 
-from app.config.astrology_presets import DEFAULT_CONFIG
+from app.config.astrology_presets import DetailLevel, get_preset
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
@@ -24,7 +24,10 @@ def _birth_data() -> BirthData:
 
 
 def _provider() -> KerykeionProvider:
-    return KerykeionProvider(config=DEFAULT_CONFIG, chart_system=DEFAULT_CHART_SYSTEM)
+    return KerykeionProvider(
+        config=get_preset(DetailLevel.CORE),
+        chart_system=DEFAULT_CHART_SYSTEM,
+    )
 
 
 def test_natal_chart_uses_explicit_tropical_placidus_settings():
