@@ -7,6 +7,7 @@ import sys
 from pathlib import Path
 
 os.environ.setdefault("ASTROLOGY_SERVICE_TOKEN", "test-astrology-service-token")
+os.environ.setdefault("ENV", "test")
 
 SERVICE_ROOT = Path(__file__).resolve().parents[1]
 

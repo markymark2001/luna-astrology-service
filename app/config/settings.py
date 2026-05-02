@@ -1,6 +1,8 @@
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+VALID_ENVIRONMENTS = frozenset({"dev", "test", "prod"})
+
 
 class Settings(BaseSettings):
     """Application settings."""
@@ -8,7 +10,7 @@ class Settings(BaseSettings):
     # Application
     app_name: str = "Luna Astrology Service"
     app_version: str = "1.0.0"
-    env: str = "dev"
+    env: str = ""
     debug: bool = False
 
     # Server
@@ -26,6 +28,14 @@ class Settings(BaseSettings):
         "",
         validation_alias="ASTROLOGY_SERVICE_TOKEN",
     )
+
+    @model_validator(mode="after")
+    def validate_environment_name(self) -> "Settings":
+        """Fail closed when ENV is missing or misspelled."""
+        if self.env not in VALID_ENVIRONMENTS:
+            allowed = ", ".join(sorted(VALID_ENVIRONMENTS))
+            raise ValueError(f"ENV must be one of: {allowed}")
+        return self
 
     @model_validator(mode="after")
     def validate_internal_service_auth(self) -> "Settings":

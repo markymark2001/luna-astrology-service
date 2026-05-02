@@ -5,6 +5,16 @@ import pytest
 from app.config.settings import Settings
 
 
+def test_env_must_be_explicit() -> None:
+    with pytest.raises(ValueError, match="ENV"):
+        Settings(env="", internal_service_token="token")
+
+
+def test_env_must_be_known_value() -> None:
+    with pytest.raises(ValueError, match="ENV"):
+        Settings(env="production", internal_service_token="token")
+
+
 def test_compute_pool_size_defaults_to_one(
     monkeypatch,
 ) -> None:
