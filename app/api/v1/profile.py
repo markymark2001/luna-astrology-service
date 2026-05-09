@@ -68,26 +68,6 @@ async def get_lookup_profile(
 
 # Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
 @router.post(
-    "/profile/monthly",
-    status_code=status.HTTP_200_OK,
-    response_class=PlainTextResponse,
-    summary="Get natal chart + monthly transits for proactive messages",
-    description="Calculate natal chart and current month transits, excluding daily transits. Designed for proactive messages where viewing time is unknown."
-)
-async def get_monthly_profile(
-    request: ProfileRequest,
-    compute_runtime: AstrologyComputeRuntime = Depends(get_compute_runtime),
-) -> str:
-    """Get natal chart + monthly transits as compact text for proactive messages."""
-    return await compute_runtime.run(
-        "monthly_profile_compact",
-        request.model_dump(mode="json"),
-        route_name="/api/v1/astrology/profile/monthly",
-    )
-
-
-# Called by: backend/app/infrastructure/repositories/http_astrology_repository.py
-@router.post(
     "/profile/placements",
     status_code=status.HTTP_200_OK,
     response_model=PlacementsResponse,

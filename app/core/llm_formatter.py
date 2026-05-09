@@ -264,7 +264,7 @@ def _format_transit_body(body_data: dict[str, Any], natal_houses: dict[str, Any]
 def _format_natal_sections(chart_data: dict[str, Any]) -> list[str]:
     """Format the common natal chart sections: planets, points, houses, natal aspects.
 
-    Shared by format_natal_chart, format_personal_profile, and format_monthly_profile.
+    Shared by format_natal_chart and format_personal_profile.
 
     Args:
         chart_data: Chart data with natal_chart and aspects keys
@@ -516,68 +516,6 @@ def _format_compact_date(date_str: str, include_year: bool = False) -> str:
         return f"{month}{day}"
     except (ValueError, AttributeError):
         return date_str
-
-
-def _format_short_date(date_str: str) -> str:
-    """Format ISO date string as short date (e.g., 'Jan 15').
-
-    Args:
-        date_str: Date in YYYY-MM-DD format
-
-    Returns:
-        Short date string like 'Jan 15'
-    """
-    if not date_str:
-        return ""
-    try:
-        from datetime import date
-        d = date.fromisoformat(date_str)
-        return d.strftime("%b %d").replace(" 0", " ")  # "Jan 05" -> "Jan 5"
-    except (ValueError, AttributeError):
-        return date_str
-
-
-def format_monthly_profile(chart_data: dict[str, Any], transit_data: dict[str, Any]) -> str:
-    """Format natal chart + monthly transits for proactive messages.
-
-    Combines natal chart data with monthly transit periods, excluding daily transits.
-    Designed for proactive messages where the exact viewing time is unknown.
-
-    Args:
-        chart_data: Natal chart data from generate_profile()
-        transit_data: Transit period data from transit_period_service
-
-    Returns:
-        Multi-line formatted text with natal chart + monthly transits
-    """
-    lines = _chart_system_header(chart_data)
-    lines.extend(_format_natal_sections(chart_data))
-
-    # Monthly transits (from transit_period_service)
-    period = transit_data.get("period", {})
-    start = period.get("start", "")
-    end = period.get("end", "")
-    transit_aspects = transit_data.get("transit_aspects", [])
-
-    if transit_aspects:
-        lines.append(f"MONTHLY TRANSITS {start} to {end}")
-        for aspect in transit_aspects:
-            transit_planet = aspect.get("transit_planet", "")
-            natal_planet = aspect.get("natal_planet", "")
-            aspect_type = aspect.get("aspect_type", "")
-            start_date = aspect.get("start_date", "")
-            end_date = aspect.get("end_date", "")
-            exact_date = aspect.get("exact_date", "")
-            exact_orb = aspect.get("exact_orb", 0)
-
-            aspect_short = _shorten_aspect(aspect_type)
-            multi_year = _spans_multiple_years(start_date, end_date)
-            date_range = _format_date_range(start_date, end_date)
-            exact_fmt = _format_compact_date(exact_date, include_year=multi_year)
-
-            lines.append(f"{transit_planet} {aspect_short} {natal_planet}: {date_range} exact {exact_fmt} ({exact_orb}°)")
-
-    return "\n".join(lines).strip()
 
 
 def _score_to_percentage(score: int) -> int:

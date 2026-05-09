@@ -1,11 +1,10 @@
 """Profile application service - orchestrates natal chart and transit calculations."""
 
-from calendar import monthrange
-from datetime import UTC, date, datetime
+from datetime import UTC, datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.application.chart_payloads import natal_chart_payload
-from app.core.llm_formatter import format_monthly_profile, format_natal_chart, format_personal_profile
+from app.core.llm_formatter import format_natal_chart, format_personal_profile
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
 from app.models.responses import PlacementItem, PlacementsResponse
@@ -110,66 +109,6 @@ class ProfileService:
         """
         profile_data = self.generate_profile(birth_data, transit_date)
         return format_personal_profile(profile_data)
-
-    def generate_monthly_profile_compact(self, birth_data: BirthData) -> str:
-        """
-        Generate natal chart + monthly transits for proactive messages.
-
-        Excludes daily transits since proactive messages may be viewed at any time.
-        Uses current month for transit calculations.
-
-        Args:
-            birth_data: Birth information
-
-        Returns:
-            Compact text with natal chart + monthly transits (no daily transits)
-        """
-        # Calculate natal chart (without transits)
-        natal_chart = self.provider.calculate_natal_chart(birth_data)
-
-        # Build natal chart data structure
-        chart_data = {
-            "chart_system": natal_chart.chart_system,
-            "natal_chart": natal_chart_payload(natal_chart),
-            "aspects": {
-                "natal": natal_chart.aspects,
-            }
-        }
-
-        # Calculate current month date range
-        today = self._resolve_now_for_birth_timezone(birth_data).date()
-        first_day = date(today.year, today.month, 1)
-        last_day = date(today.year, today.month, monthrange(today.year, today.month)[1])
-
-        # Calculate monthly transits using transit periods
-        transit_result = self.provider.calculate_transit_periods(
-            natal_chart=natal_chart,
-            start_date=first_day,
-            end_date=last_day
-        )
-
-        # Build transit data structure
-        transit_data = {
-            "chart_system": natal_chart.chart_system,
-            "period": {
-                "start": first_day.isoformat(),
-                "end": last_day.isoformat(),
-            },
-            "transit_aspects": [
-                {
-                    "transit_planet": asp.transit_planet,
-                    "natal_planet": asp.natal_planet,
-                    "aspect_type": asp.aspect_type,
-                    "start_date": asp.start_date.isoformat(),
-                    "end_date": asp.end_date.isoformat(),
-                    "exact_date": asp.exact_date.isoformat(),
-                    "exact_orb": asp.exact_orb,
-                }
-                for asp in transit_result.aspects
-            ]
-        }
-
-        return format_monthly_profile(chart_data, transit_data)
 
     @staticmethod
     def _parse_house(house_value: str | int | None) -> int | None:

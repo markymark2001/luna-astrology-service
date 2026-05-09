@@ -63,9 +63,6 @@ def _run_compute_task(task_name: str, payload: dict[str, Any], enqueued_at: floa
                 request,
                 request.transit_date,
             )
-        elif task_name == "monthly_profile_compact":
-            request = ProfileRequest.model_validate(payload)
-            result = services["profile"].generate_monthly_profile_compact(request)
         elif task_name == "placements":
             request = ProfileRequest.model_validate(payload)
             result = services["profile"].generate_placements(request).model_dump(mode="json")

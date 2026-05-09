@@ -80,7 +80,6 @@ def test_cpu_bound_routes_use_shared_compute_runtime(monkeypatch):
         {
             "profile_compact": "profile",
             "lookup_profile_compact": "lookup",
-            "monthly_profile_compact": "monthly",
             "placements": PLACEMENTS_RESULT,
             "synastry_compact": "synastry",
             "transit_period_compact": "transit",
@@ -93,7 +92,6 @@ def test_cpu_bound_routes_use_shared_compute_runtime(monkeypatch):
     routes = [
         ("/api/v1/astrology/profile", BASE_BIRTH_DATA, "profile_compact"),
         ("/api/v1/astrology/profile/lookup", BASE_BIRTH_DATA, "lookup_profile_compact"),
-        ("/api/v1/astrology/profile/monthly", BASE_BIRTH_DATA, "monthly_profile_compact"),
         ("/api/v1/astrology/profile/placements", BASE_BIRTH_DATA, "placements"),
         ("/api/v1/astrology/synastry", SYNASTRY_PAYLOAD, "synastry_compact"),
         ("/api/v1/astrology/transits/period", TRANSIT_PERIOD_PAYLOAD, "transit_period_compact"),
