@@ -4,6 +4,11 @@ from datetime import UTC, datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from app.application.chart_payloads import natal_chart_payload
+from app.application.unknown_birth_data_policy import (
+    format_safe_partial_natal_chart,
+    has_unknown_birth_data,
+    is_safe_unknown_variant,
+)
 from app.core.llm_formatter import format_natal_chart, format_personal_profile
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
@@ -89,7 +94,14 @@ class ProfileService:
         profile_data = self.generate_profile(birth_data, transit_date)
         return format_natal_chart(profile_data)
 
-    def generate_personal_profile_compact(self, birth_data: BirthData, transit_date: datetime | None = None) -> str:
+    def generate_personal_profile_compact(
+        self,
+        birth_data: BirthData,
+        transit_date: datetime | None = None,
+        *,
+        subject_label: str | None = None,
+        unknown_birth_data_variant: str | None = None,
+    ) -> str:
         """
         Generate person-specific profile, excluding current sky positions.
 
@@ -107,6 +119,12 @@ class ProfileService:
         Returns:
             Compact text excluding current sky positions
         """
+        if is_safe_unknown_variant(unknown_birth_data_variant) and has_unknown_birth_data(birth_data):
+            return format_safe_partial_natal_chart(
+                provider=self.provider,
+                birth_data=birth_data,
+                subject_label=subject_label,
+            )
         profile_data = self.generate_profile(birth_data, transit_date)
         return format_personal_profile(profile_data)
 

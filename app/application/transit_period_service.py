@@ -3,6 +3,12 @@
 from datetime import date
 
 from app.application.chart_payloads import llm_natal_chart_payload
+from app.application.unknown_birth_data_policy import (
+    has_unknown_birth_data,
+    is_safe_unknown_variant,
+    prepend_note_after_chart_system,
+    transit_caution_note,
+)
 from app.core.llm_formatter import format_transit_periods
 from app.domain.models import BirthData
 from app.domain.ports import IAstrologyProvider
@@ -92,7 +98,10 @@ class TransitPeriodService:
         self,
         birth_data: BirthData,
         start_date: str,
-        end_date: str
+        end_date: str,
+        *,
+        subject_label: str | None = None,
+        unknown_birth_data_variant: str | None = None,
     ) -> str:
         """
         Generate LLM-optimized compact transit period data.
@@ -106,4 +115,7 @@ class TransitPeriodService:
             Compact text format optimized for LLM consumption
         """
         transit_data = self.generate_transit_period(birth_data, start_date, end_date)
-        return format_transit_periods(transit_data)
+        text = format_transit_periods(transit_data)
+        if is_safe_unknown_variant(unknown_birth_data_variant) and has_unknown_birth_data(birth_data):
+            return prepend_note_after_chart_system(text, transit_caution_note(birth_data, subject_label))
+        return text

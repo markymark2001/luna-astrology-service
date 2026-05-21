@@ -20,6 +20,8 @@ class BirthData(BaseModel):
     latitude: float | None = Field(51.5074, ge=-90, le=90, description="Birth latitude (defaults to London: 51.5074)")
     longitude: float | None = Field(-0.1278, ge=-180, le=180, description="Birth longitude (defaults to London: -0.1278)")
     timezone: str | None = Field("Europe/London", description="IANA timezone (defaults to Europe/London)")
+    birth_time_known: bool = Field(True, description="Whether birth time came from a user-backed input")
+    birth_location_known: bool = Field(True, description="Whether birth location came from a user-backed input")
 
     model_config = ConfigDict(
         extra="forbid",

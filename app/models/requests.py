@@ -46,6 +46,14 @@ class ProfileRequest(BirthData):
         None,
         description="Date/time for transit calculation (defaults to current time)"
     )
+    subject_label: str | None = Field(
+        None,
+        description="LLM-facing subject label for precision notes",
+    )
+    unknown_birth_data_variant: str = Field(
+        "current",
+        description="Backend-assigned unknown birth data experiment variant",
+    )
 
 
 class TransitPeriodRequest(BirthData):
@@ -83,6 +91,14 @@ class TransitPeriodRequest(BirthData):
         description="End date for transit period in YYYY-MM-DD format",
         pattern=r"^\d{4}-\d{2}-\d{2}$"
     )
+    subject_label: str | None = Field(
+        None,
+        description="LLM-facing subject label for precision notes",
+    )
+    unknown_birth_data_variant: str = Field(
+        "current",
+        description="Backend-assigned unknown birth data experiment variant",
+    )
 
 
 class SynastryRequest(BaseModel):
@@ -118,3 +134,15 @@ class SynastryRequest(BaseModel):
 
     person1: BirthData = Field(..., description="Birth data for first person")
     person2: BirthData = Field(..., description="Birth data for second person")
+    person1_label: str | None = Field(
+        None,
+        description="LLM-facing label for first person precision notes",
+    )
+    person2_label: str | None = Field(
+        None,
+        description="LLM-facing label for second person precision notes",
+    )
+    unknown_birth_data_variant: str = Field(
+        "current",
+        description="Backend-assigned unknown birth data experiment variant",
+    )
