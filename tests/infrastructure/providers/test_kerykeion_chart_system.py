@@ -1,12 +1,14 @@
 """Tests for the canonical chart-system configuration."""
 
-from datetime import date
+from datetime import date, datetime
+from unittest.mock import Mock, patch
 
 import pytest
 
 from app.config.astrology_presets import DetailLevel, get_preset
 from app.config.chart_system import DEFAULT_CHART_SYSTEM
 from app.domain.models import BirthData
+from app.infrastructure.providers.kerykeion_chart_factory import KerykeionChartFactory
 from app.infrastructure.providers.kerykeion_provider import KerykeionProvider
 
 
@@ -68,3 +70,95 @@ def test_ephemeris_points_use_same_chart_system_settings():
     assert points[0].zodiac_type == "Tropical"
     assert points[0].houses_system_identifier == "P"
     assert points[0].sidereal_mode is None
+
+
+def test_subject_factory_disables_dst_inference():
+    factory = KerykeionChartFactory(chart_system=DEFAULT_CHART_SYSTEM)
+    subject = Mock(
+        zodiac_type=DEFAULT_CHART_SYSTEM.zodiac_type,
+        houses_system_identifier=DEFAULT_CHART_SYSTEM.house_system_identifier,
+        sidereal_mode=DEFAULT_CHART_SYSTEM.sidereal_mode,
+        perspective_type=DEFAULT_CHART_SYSTEM.perspective_type,
+    )
+
+    with patch(
+        "app.infrastructure.providers.kerykeion_chart_factory.AstrologicalSubjectFactory.from_birth_data",
+        return_value=subject,
+    ) as create_subject:
+        assert factory.create_subject(name="Subject", birth_data=_birth_data()) is subject
+
+    assert create_subject.call_args.kwargs["is_dst"] is False
+
+
+def test_subject_factory_rejects_nonexistent_local_time_before_disabling_dst():
+    factory = KerykeionChartFactory(chart_system=DEFAULT_CHART_SYSTEM)
+
+    with (
+        patch(
+            "app.infrastructure.providers.kerykeion_chart_factory.AstrologicalSubjectFactory.from_birth_data"
+        ) as create_subject,
+        pytest.raises(ValueError, match="Nonexistent local time"),
+    ):
+        factory.create_subject(
+            name="Subject",
+            birth_data=BirthData(
+                year=2024,
+                month=3,
+                day=10,
+                hour=2,
+                minute=30,
+                latitude=40.7128,
+                longitude=-74.0060,
+                timezone="America/New_York",
+            ),
+        )
+
+    create_subject.assert_not_called()
+
+
+def test_subject_factory_uses_standard_time_for_ambiguous_local_time():
+    factory = KerykeionChartFactory(chart_system=DEFAULT_CHART_SYSTEM)
+    subject = Mock(
+        zodiac_type=DEFAULT_CHART_SYSTEM.zodiac_type,
+        houses_system_identifier=DEFAULT_CHART_SYSTEM.house_system_identifier,
+        sidereal_mode=DEFAULT_CHART_SYSTEM.sidereal_mode,
+        perspective_type=DEFAULT_CHART_SYSTEM.perspective_type,
+    )
+
+    with patch(
+        "app.infrastructure.providers.kerykeion_chart_factory.AstrologicalSubjectFactory.from_birth_data",
+        return_value=subject,
+    ) as create_subject:
+        factory.create_subject(
+            name="Subject",
+            birth_data=BirthData(
+                year=2024,
+                month=11,
+                day=3,
+                hour=1,
+                minute=30,
+                latitude=40.7128,
+                longitude=-74.0060,
+                timezone="America/New_York",
+            ),
+        )
+
+    assert create_subject.call_args.kwargs["is_dst"] is False
+
+
+def test_ephemeris_factory_disables_dst_inference():
+    factory = KerykeionChartFactory(chart_system=DEFAULT_CHART_SYSTEM)
+
+    with patch(
+        "app.infrastructure.providers.kerykeion_chart_factory.EphemerisDataFactory",
+        return_value=Mock(),
+    ) as create_ephemeris:
+        factory.create_ephemeris(
+            start_datetime=datetime(2000, 1, 1),
+            end_datetime=datetime(2000, 1, 3),
+            location=_birth_data(),
+            step_days=1,
+            max_days=10,
+        )
+
+    assert create_ephemeris.call_args.kwargs["is_dst"] is False
