@@ -7,16 +7,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.domain.models.birth_data import BirthData
 
 
-class NatalChartRequest(BirthData):
-    """
-    Request model for natal chart calculation.
-
-    Inherits all fields and validation from domain BirthData model.
-    """
-
-    pass
-
-
 class ProfileRequest(BirthData):
     """
     Request model for astrological profile (natal chart + transits).

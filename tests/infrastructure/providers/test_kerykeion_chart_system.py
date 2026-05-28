@@ -1,6 +1,6 @@
 """Tests for the canonical chart-system configuration."""
 
-from datetime import date, datetime
+from datetime import datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -55,21 +55,6 @@ def test_placidus_house_cusps_are_not_snapped_to_sign_boundaries():
     assert natal_chart.houses["first_house"]["sign"] == natal_chart.points["ascendant"]["sign"]
     assert first_house_abs_pos == pytest.approx(193.6954, abs=0.01)
     assert second_house_abs_pos == pytest.approx(220.7712, abs=0.01)
-
-
-def test_ephemeris_points_use_same_chart_system_settings():
-    provider = _provider()
-
-    points = provider.generate_ephemeris_for_range(
-        start_date=date(2000, 1, 1),
-        end_date=date(2000, 1, 3),
-        location=_birth_data(),
-    )
-
-    assert points
-    assert points[0].zodiac_type == "Tropical"
-    assert points[0].houses_system_identifier == "P"
-    assert points[0].sidereal_mode is None
 
 
 def test_subject_factory_disables_dst_inference():
