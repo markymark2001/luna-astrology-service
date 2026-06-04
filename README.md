@@ -1,9 +1,9 @@
-# Luna Astrology Service
+# Staia Astrology Service
 
 FastAPI astrology compute service powered by
 [Kerykeion](https://github.com/g-battaglia/kerykeion).
 
-This service is published separately from the private Luna/Taia app repository
+This service is published separately from the private Staia/Staia app repository
 to preserve the AGPL boundary around Kerykeion-derived code. The private backend
 must call it over HTTP and must not import this package directly.
 

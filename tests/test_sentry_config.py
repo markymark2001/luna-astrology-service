@@ -12,7 +12,7 @@ def test_init_astrology_sentry_disables_log_event_promotion():
         init_astrology_sentry(
             dsn="https://examplePublicKey@o0.ingest.sentry.io/0",
             environment="prod-astrology",
-            release="taia-astrology@1.2.3",
+            release="staia-astrology@1.2.3",
         )
 
     integrations = mock_init.call_args.kwargs["integrations"]

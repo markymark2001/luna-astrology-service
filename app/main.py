@@ -3,7 +3,7 @@
 This service is licensed under AGPL 3.0 due to the use of Kerykeion library.
 Public repository: https://github.com/markymark2001/luna-astrology-service
 
-The service is automatically synced from the private Luna repository.
+The service is automatically synced from the private Staia repository.
 """
 
 import logging
@@ -66,7 +66,7 @@ if settings.env == "prod" and settings.sentry_dsn:
     init_astrology_sentry(
         dsn=settings.sentry_dsn,
         environment=f"{settings.env}-astrology",
-        release=get_sentry_release("taia-astrology"),
+        release=get_sentry_release("staia-astrology"),
     )
 
 

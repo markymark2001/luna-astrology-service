@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     """Application settings."""
 
     # Application
-    app_name: str = "Luna Astrology Service"
+    app_name: str = "Staia Astrology Service"
     app_version: str = "1.0.0"
     env: str = ""
     debug: bool = False
