@@ -1,7 +1,7 @@
 """FastAPI application with hexagonal architecture and shared compute runtime.
 
 This service is licensed under AGPL 3.0 due to the use of Kerykeion library.
-Public repository: https://github.com/markymark2001/luna-astrology-service
+Public repository: https://github.com/markymark2001/staia-astrology-service
 
 The service is automatically synced from the private Staia repository.
 """
